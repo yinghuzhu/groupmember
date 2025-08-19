@@ -74,12 +74,6 @@
             cursor: pointer;
             font-size: 16px;
         }
-        .footer {
-            text-align: center;
-            padding: 15px;
-            color: #999;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body>
@@ -102,10 +96,6 @@
         </table>
         
         <button class="refresh-btn" id="refreshBtn">刷新数据</button>
-    </div>
-    
-    <div class="footer">
-        最后更新时间: <span id="updateTime"></span>
     </div>
 
     <script>
@@ -164,10 +154,6 @@
                 
                 memberList.appendChild(row);
             });
-            
-            // 更新最后刷新时间
-            document.getElementById('updateTime').textContent = 
-                new Date(data.lastUpdated || new Date()).toLocaleString();
         }
         
         // 加载并显示数据
@@ -186,14 +172,8 @@
             }
         }
         
-        // 刷新按钮事件 - 现在会强制重新加载
-        document.getElementById('refreshBtn').addEventListener('click', function() {
-            // 清除可能的缓存
-            if ('caches' in window) {
-                caches.delete('data.json');
-            }
-            loadData();
-        });
+        // 刷新按钮事件
+        document.getElementById('refreshBtn').addEventListener('click', loadData);
         
         // 页面加载时获取数据
         document.addEventListener('DOMContentLoaded', loadData);
