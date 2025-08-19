@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>群成员分数展示</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        h1 {
+            text-align: center;
+            padding: 15px;
+            background-color: #07C160;
+            color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .score-low {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #f44336;
+        }
+        .refresh-btn {
+            display: block;
+            width: calc(100% - 30px);
+            margin: 15px auto;
+            padding: 10px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>群成员分数展示</h1>
+        
+        <table id="memberTable">
+            <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>分数</th>
+                    <th>描述</th>
+                </tr>
+            </thead>
+            <tbody id="memberList">
+                <tr>
+                    <td colspan="3" class="loading">数据加载中...</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <button class="refresh-btn" id="refreshBtn">刷新数据</button>
+    </div>
+    
+    <div class="footer">
+        最后更新时间: <span id="updateTime"></span>
+    </div>
+
+    <script>
+        // 获取成员数据
+        async function fetchMemberData() {
+            try {
+                // 添加时间戳防止缓存
+                const timestamp = new Date().getTime();
+                const response = await fetch(`data.json?t=${timestamp}`);
+                if (!response.ok) {
+                    throw new Error('数据加载失败');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('获取数据出错:', error);
+                throw error;
+            }
+        }
+        
+        // 渲染成员表格
+        function renderMemberTable(data) {
+            const memberList = document.getElementById('memberList');
+            
+            if (!data || !data.members) {
+                memberList.innerHTML = '<tr><td colspan="3" class="error">数据格式错误</td></tr>';
+                return;
+            }
+            
+            if (data.members.length === 0) {
+                memberList.innerHTML = '<tr><td colspan="3" class="loading">暂无成员数据</td></tr>';
+                return;
+            }
+            
+            memberList.innerHTML = '';
+            
+            data.members.forEach(member => {
+                const row = document.createElement('tr');
+                
+                // 姓名列
+                const nameCell = document.createElement('td');
+                nameCell.textContent = member.name;
+                row.appendChild(nameCell);
+                
+                // 分数列
+                const scoreCell = document.createElement('td');
+                scoreCell.textContent = member.score;
+                if (member.score < 5) {
+                    scoreCell.className = 'score-low';
+                }
+                row.appendChild(scoreCell);
+                
+                // 描述列
+                const descCell = document.createElement('td');
+                descCell.textContent = member.description || '暂无描述';
+                row.appendChild(descCell);
+                
+                memberList.appendChild(row);
+            });
+            
+            // 更新最后刷新时间
+            document.getElementById('updateTime').textContent = 
+                new Date(data.lastUpdated || new Date()).toLocaleString();
+        }
+        
+        // 加载并显示数据
+        async function loadData() {
+            try {
+                // 显示加载状态
+                document.getElementById('memberList').innerHTML = 
+                    '<tr><td colspan="3" class="loading">数据加载中...</td></tr>';
+                
+                const data = await fetchMemberData();
+                renderMemberTable(data);
+            } catch (error) {
+                document.getElementById('memberList').innerHTML = 
+                    '<tr><td colspan="3" class="error">数据加载失败，请刷新重试</td></tr>';
+                console.error('加载数据失败:', error);
+            }
+        }
+        
+        // 刷新按钮事件 - 现在会强制重新加载
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            // 清除可能的缓存
+            if ('caches' in window) {
+                caches.delete('data.json');
+            }
+            loadData();
+        });
+        
+        // 页面加载时获取数据
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

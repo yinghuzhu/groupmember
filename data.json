@@ -1,0 +1,29 @@
+{
+  "members": [
+    {
+      "id": 1,
+      "name": "张三",
+      "score": 10,
+      "description": "优秀成员，无违规记录"
+    },
+    {
+      "id": 2,
+      "name": "李四",
+      "score": 8,
+      "description": "迟到2次"
+    },
+    {
+      "id": 3,
+      "name": "王五",
+      "score": 6,
+      "description": "未完成作业1次"
+    },
+    {
+      "id": 4,
+      "name": "赵六",
+      "score": 4,
+      "description": "多次违规，需注意"
+    }
+  ],
+  "lastUpdated": "2023-11-15T08:30:00Z"
+}
