@@ -182,15 +182,15 @@
 },
 {
 "id": 31,
-"name": "洛谷",
+"name": "👾",
 "score": 10,
 "description": "暂无描述"
 },
 {
 "id": 32,
-"name": "清朝像素哥",
-"score": 10,
-"description": "暂无描述"
+"name": "绝世雪王",
+"score": 9,
+"description": "讲脏话,扣一分"
 },
 {
 "id": 33,
@@ -483,6 +483,12 @@
 {
 "id": 82,
 "name": "John",
+"score": 10,
+"description": "新成员"
+},
+{
+"id": 83,
+"name": "NKG Aviation．Dai",
 "score": 10,
 "description": "新成员"
 }
