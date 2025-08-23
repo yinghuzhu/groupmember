@@ -23,11 +23,46 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #2196F3;
+            color: white;
+        }
         h1 {
             text-align: center;
             padding: 15px;
             background-color: #2196F3;
             color: white;
+            margin: 0;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logout-btn, .change-password-btn {
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .logout-btn {
+            background-color: #f44336;
+        }
+        .change-password-btn {
+            background-color: #FF9800;
+        }
+        .logout-btn:hover {
+            background-color: #d32f2f;
+        }
+        .change-password-btn:hover {
+            background-color: #F57C00;
         }
         table {
             width: 100%;
@@ -116,7 +151,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>群成员管理后台</h1>
+        <div class="header">
+            <h1>群成员管理后台</h1>
+            <div class="user-info">
+                <span>管理员: {{ session.admin_username }}</span>
+                <a href="/admin/change-password" class="change-password-btn">修改密码</a>
+                <a href="/admin/logout" class="logout-btn">登出</a>
+            </div>
+        </div>
         
         <!-- 创建新成员表单 -->
         <div class="form-container">
