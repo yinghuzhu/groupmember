@@ -160,6 +160,15 @@
             width: auto;
             margin-right: 10px;
         }
+        .filter-form input[type="text"] {
+            display: inline-block;
+            width: auto;
+            margin-right: 10px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
         .filter-form .btn {
             display: inline-block;
             width: auto;
@@ -187,6 +196,8 @@
                     <option value="qq" {% if selected_group_type == 'qq' %}selected{% endif %}>QQ群</option>
                     <option value="qq_channel" {% if selected_group_type == 'qq_channel' %}selected{% endif %}>QQ频道</option>
                 </select>
+                <label for="search">搜索:</label>
+                <input type="text" id="search" name="search" value="{{ search_query or '' }}" placeholder="姓名或描述" style="width: 150px;">
                 <button type="submit" class="btn btn-primary">筛选</button>
                 <a href="/admin" class="btn">显示全部</a>
             </form>
@@ -195,7 +206,7 @@
         <!-- 创建新成员表单 -->
         <div class="form-container">
             <h2>添加新成员</h2>
-            <form action="/admin/create" method="post">
+            <form action="/admin/create{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post">
                 <div class="form-group">
                     <label for="create_name">姓名:</label>
                     <input type="text" id="create_name" name="name" required>
@@ -258,7 +269,7 @@
                             <td style="max-width: 200px; word-wrap: break-word;">{{ member.description or '暂无描述' }}</td>
                             <td class="action-buttons">
                                 <!-- 更新表单 -->
-                                <form action="/admin/update" method="post" style="display: inline;">
+                                <form action="/admin/update{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post" style="display: inline;">
                                     <input type="hidden" name="id" value="{{ member.id }}">
                                     <input type="text" name="name" value="{{ member.name }}" required style="width: 80px; padding: 5px;">
                                     <input type="number" name="score" value="{{ member.score }}" min="0" max="10" required style="width: 50px; padding: 5px;">
@@ -271,7 +282,7 @@
                                     <button type="submit" class="btn btn-primary" style="padding: 5px 10px;">更新</button>
                                 </form>
                                 <!-- 删除按钮 -->
-                                <form action="/admin/delete/{{ member.id }}" method="post" style="display: inline;" onsubmit="return confirm('确定要删除成员 {{ member.name }} 吗？')">
+                                <form action="/admin/delete/{{ member.id }}{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post" style="display: inline;" onsubmit="return confirm('确定要删除成员 {{ member.name }} 吗？')">
                                     <button type="submit" class="btn btn-danger" style="padding: 5px 10px;">删除</button>
                                 </form>
                             </td>

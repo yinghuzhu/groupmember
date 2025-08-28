@@ -50,7 +50,7 @@ def create_app():
     if not SUPABASE_KEY:
         print("错误: 未设置SUPABASE_KEY环境变量")
     
-    def load_member_data(group_type=None):
+    def load_member_data(group_type=None, search_query=None):
         """从Supabase加载成员数据，按ID排序"""
         if not SUPABASE_URL or not SUPABASE_KEY:
             print("Supabase配置缺失")
@@ -62,6 +62,9 @@ def create_app():
             
         try:
             # 构建请求URL，添加排序参数
+            base_url = f"{SUPABASE_URL}/rest/v1/members"
+            params = ["order=id"]
+            
             if group_type:
                 # 将字符串类型的group_type转换为整数
                 group_type_map = {
@@ -70,9 +73,15 @@ def create_app():
                     'qq_channel': 3
                 }
                 group_type_int = group_type_map.get(group_type, 1)  # 默认为1(微信群)
-                url = f"{SUPABASE_URL}/rest/v1/members?group_type=eq.{group_type_int}&order=id"
-            else:
-                url = f"{SUPABASE_URL}/rest/v1/members?order=id"
+                params.append(f"group_type=eq.{group_type_int}")
+            
+            # 添加模糊搜索参数
+            if search_query:
+                # 使用 ilike 进行模糊搜索
+                encoded_search = search_query.replace('%', '%25').replace('*', '%2A')
+                params.append(f"or=(name.ilike.*{encoded_search}*,description.ilike.*{encoded_search}*)")
+            
+            url = f"{base_url}?{'&'.join(params)}"
                 
             print(f"正在请求URL: {url}")  # 调试信息
                 
@@ -109,6 +118,16 @@ def create_app():
                                     'qq_channel': 3
                                 }
                                 member['group_type'] = group_type_map.get(group_type, 1)
+                # 为旧数据添加group_type字段
+                for member in members:
+                    if 'group_type' not in member and group_type:
+                        group_type_map = {
+                            'wechat': 1,
+                            'qq': 2,
+                            'qq_channel': 3
+                        }
+                        member['group_type'] = group_type_map.get(group_type, 1)
+                
                 return {"members": members}
             else:
                 print(f"获取数据失败: {response.text}")
@@ -415,8 +434,11 @@ def create_app():
     @app.route('/wechat-members')
     def wechat_members():
         """渲染微信群成员页面"""
+        # 获取搜索参数
+        search_query = request.args.get('search')
+        
         print("访问微信群成员路由")  # 调试信息
-        data = load_member_data('wechat')
+        data = load_member_data('wechat', search_query)
         if data is None:
             print("无法从Supabase加载微信群成员数据")
             return "无法从Supabase加载数据", 500
@@ -427,13 +449,16 @@ def create_app():
         print(f"微信群成员页面加载了 {len(wechat_members)} 条数据")  # 调试信息
         
         return render_template('index.html', members=wechat_members, 
-                              last_updated="未知", active_nav="wechat")
+                              last_updated="未知", active_nav="wechat", search_query=search_query)
 
     @app.route('/qq-group')
     def qq_group():
         """渲染QQ群成员页面"""
+        # 获取搜索参数
+        search_query = request.args.get('search')
+        
         print("访问QQ群成员路由")  # 调试信息
-        data = load_member_data('qq')
+        data = load_member_data('qq', search_query)
         if data is None:
             print("无法从Supabase加载QQ群成员数据")
             return "无法从Supabase加载数据", 500
@@ -444,13 +469,16 @@ def create_app():
         print(f"QQ群成员页面加载了 {len(qq_members)} 条数据")  # 调试信息
         
         return render_template('index.html', members=qq_members, 
-                              last_updated="未知", active_nav="qq")
+                              last_updated="未知", active_nav="qq", search_query=search_query)
 
     @app.route('/qq-channel')
     def qq_channel():
         """渲染QQ频道成员页面"""
+        # 获取搜索参数
+        search_query = request.args.get('search')
+        
         print("访问QQ频道成员路由")  # 调试信息
-        data = load_member_data('qq_channel')
+        data = load_member_data('qq_channel', search_query)
         if data is None:
             print("无法从Supabase加载QQ频道成员数据")
             return "无法从Supabase加载数据", 500
@@ -461,7 +489,7 @@ def create_app():
         print(f"QQ频道成员页面加载了 {len(qq_channel_members)} 条数据")  # 调试信息
         
         return render_template('index.html', members=qq_channel_members, 
-                              last_updated="未知", active_nav="qq_channel")
+                              last_updated="未知", active_nav="qq_channel", search_query=search_query)
 
     @app.route('/admin/login', methods=['GET', 'POST'])
     def admin_login():
@@ -490,15 +518,12 @@ def create_app():
     @login_required
     def admin():
         """渲染后台管理页面"""
-        # 获取查询参数中的群组类型
+        # 获取查询参数中的群组类型和搜索关键词
         group_type = request.args.get('group_type')
+        search_query = request.args.get('search')
         
-        # 如果有指定群组类型，则按群组类型加载数据
-        if group_type:
-            data = load_member_data(group_type)
-        else:
-            # 否则加载所有数据
-            data = load_member_data()
+        # 如果有指定群组类型或搜索关键词，则按条件加载数据
+        data = load_member_data(group_type, search_query)
             
         if data is None:
             return "无法从Supabase加载数据", 500
@@ -517,7 +542,7 @@ def create_app():
                 data['members'] = filtered_members
         
         return render_template('admin.html', members=data['members'], 
-                             selected_group_type=group_type)
+                             selected_group_type=group_type, search_query=search_query)
 
     @app.route('/admin/change-password', methods=['GET', 'POST'])
     @login_required
@@ -554,16 +579,23 @@ def create_app():
         description = request.form.get('description')
         group_type = request.form.get('group_type')
         
-        # 获取当前筛选的群组类型，用于重定向
+        # 获取当前筛选的群组类型和搜索关键词，用于重定向
         current_group_type = request.args.get('group_type')
+        search_query = request.args.get('search')
         
         # 即使group_type为空也允许创建
         if name and score:
             success = create_member(name, int(score), description, group_type)
             if success:
-                # 根据当前筛选的群组类型进行重定向
+                # 根据当前筛选的群组类型和搜索关键词进行重定向
+                redirect_params = []
                 if current_group_type:
-                    return redirect(url_for('admin', group_type=current_group_type))
+                    redirect_params.append(f"group_type={current_group_type}")
+                if search_query:
+                    redirect_params.append(f"search={search_query}")
+                
+                if redirect_params:
+                    return redirect(url_for('admin') + '?' + '&'.join(redirect_params))
                 else:
                     return redirect(url_for('admin'))
             else:
@@ -581,15 +613,22 @@ def create_app():
         description = request.form.get('description')
         group_type = request.form.get('group_type')
         
-        # 获取当前筛选的群组类型，用于重定向
+        # 获取当前筛选的群组类型和搜索关键词，用于重定向
         current_group_type = request.args.get('group_type')
+        search_query = request.args.get('search')
         
         if member_id and name and score and group_type:
             success = update_member_data(member_id, name, int(score), description, group_type)
             if success:
-                # 根据当前筛选的群组类型进行重定向
+                # 根据当前筛选的群组类型和搜索关键词进行重定向
+                redirect_params = []
                 if current_group_type:
-                    return redirect(url_for('admin', group_type=current_group_type))
+                    redirect_params.append(f"group_type={current_group_type}")
+                if search_query:
+                    redirect_params.append(f"search={search_query}")
+                
+                if redirect_params:
+                    return redirect(url_for('admin') + '?' + '&'.join(redirect_params))
                 else:
                     return redirect(url_for('admin'))
             else:
@@ -602,14 +641,21 @@ def create_app():
     def admin_delete(member_id):
         """处理删除成员的请求"""
         if member_id:
-            # 获取当前筛选的群组类型，用于重定向
+            # 获取当前筛选的群组类型和搜索关键词，用于重定向
             current_group_type = request.args.get('group_type')
+            search_query = request.args.get('search')
             
             success = delete_member(member_id)
             if success:
-                # 根据当前筛选的群组类型进行重定向
+                # 根据当前筛选的群组类型和搜索关键词进行重定向
+                redirect_params = []
                 if current_group_type:
-                    return redirect(url_for('admin', group_type=current_group_type))
+                    redirect_params.append(f"group_type={current_group_type}")
+                if search_query:
+                    redirect_params.append(f"search={search_query}")
+                
+                if redirect_params:
+                    return redirect(url_for('admin') + '?' + '&'.join(redirect_params))
                 else:
                     return redirect(url_for('admin'))
             else:
