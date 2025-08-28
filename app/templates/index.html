@@ -172,7 +172,13 @@
             
             <button class="refresh-btn" id="refreshBtn" onclick="location.reload()">刷新数据</button>
         {% else %}
-            <div class="error">暂无成员数据</div>
+            <div class="error">
+                {% if search_query %}
+                    未找到与 "{{ search_query }}" 相关的成员数据
+                {% else %}
+                    暂无成员数据
+                {% endif %}
+            </div>
         {% endif %}
         {% endif %}
     </div>

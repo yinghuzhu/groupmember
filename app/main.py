@@ -99,26 +99,8 @@ def create_app():
             if response.ok:
                 members = response.json()
                 print(f"获取到 {len(members)} 条数据")  # 调试信息
-                # 如果指定了group_type但没有找到数据，则获取所有数据作为后备方案
-                if group_type and len(members) == 0:
-                    print(f"未找到group_type为 {group_type} 的数据，尝试获取所有数据")  # 调试信息
-                    # 尝试获取所有数据（兼容旧数据）
-                    url_all = f"{SUPABASE_URL}/rest/v1/members?order=id"
-                    response_all = requests.get(url_all, headers=headers)
-                    print(f"所有数据请求状态码: {response_all.status_code}")  # 调试信息
-                    if response_all.ok:
-                        members = response_all.json()
-                        print(f"获取到 {len(members)} 条总数据")  # 调试信息
-                        # 为旧数据添加group_type字段
-                        for member in members:
-                            if 'group_type' not in member:
-                                group_type_map = {
-                                    'wechat': 1,
-                                    'qq': 2,
-                                    'qq_channel': 3
-                                }
-                                member['group_type'] = group_type_map.get(group_type, 1)
-                # 为旧数据添加group_type字段
+                
+                # 为旧数据添加group_type字段（向后兼容）
                 for member in members:
                     if 'group_type' not in member and group_type:
                         group_type_map = {
