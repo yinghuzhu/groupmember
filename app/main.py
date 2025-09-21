@@ -618,7 +618,7 @@ def create_app():
         else:
             return "缺少必要参数", 400
 
-    @app.route('/admin/delete/<int:member_id>')
+    @app.route('/admin/delete/<int:member_id>', methods=['POST'])
     @login_required
     def admin_delete(member_id):
         """处理删除成员的请求"""
