@@ -173,6 +173,38 @@
             display: inline-block;
             width: auto;
         }
+        .management-section {
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .management-section h2 {
+            margin-bottom: 15px;
+        }
+        .management-section form {
+            max-width: 600px;
+        }
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .tab-button.active {
+            background-color: #2196F3;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -186,116 +218,301 @@
             </div>
         </div>
         
-        <!-- 群组筛选表单 -->
-        <div class="filter-form">
-            <form method="GET" action="/admin">
-                <label for="group_type">筛选群组:</label>
-                <select id="group_type" name="group_type">
-                    <option value="">全部群组</option>
-                    <option value="wechat" {% if selected_group_type == 'wechat' %}selected{% endif %}>微信群</option>
-                    <option value="qq" {% if selected_group_type == 'qq' %}selected{% endif %}>QQ群</option>
-                    <option value="qq_channel" {% if selected_group_type == 'qq_channel' %}selected{% endif %}>QQ频道</option>
-                </select>
-                <label for="search">搜索:</label>
-                <input type="text" id="search" name="search" value="{{ search_query or '' }}" placeholder="姓名或描述" style="width: 150px;">
-                <button type="submit" class="btn btn-primary">筛选</button>
-                <a href="/admin" class="btn">显示全部</a>
-            </form>
+        <!-- Tab导航栏 -->
+        <div class="tab-container">
+            <button class="tab-button active" onclick="openTab(event, 'members')">成员管理</button>
+            <button class="tab-button" onclick="openTab(event, 'group-info')">群信息管理</button>
         </div>
         
-        <!-- 创建新成员表单 -->
-        <div class="form-container">
-            <h2>添加新成员</h2>
-            <form action="/admin/create{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post">
-                <div class="form-group">
-                    <label for="create_name">姓名:</label>
-                    <input type="text" id="create_name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="create_score">分数:</label>
-                    <input type="number" id="create_score" name="score" min="0" max="10" required>
-                </div>
-                <div class="form-group">
-                    <label for="create_group_type">群组类型:</label>
-                    <select id="create_group_type" name="group_type" required>
-                        <option value="wechat" {% if selected_group_type == 'wechat' %}selected{% endif %}>微信群</option>
-                        <option value="qq" {% if selected_group_type == 'qq' %}selected{% endif %}>QQ群</option>
-                        <option value="qq_channel" {% if selected_group_type == 'qq_channel' %}selected{% endif %}>QQ频道</option>
+        <!-- 成员管理 Tab -->
+        <div id="members" class="tab-content active">
+            <!-- 群组筛选表单 -->
+            <div class="filter-form">
+                <form method="GET" action="/admin">
+                    <label for="group_type">筛选群组:</label>
+                    <select id="group_type" name="group_type">
+                        <option value="">全部群组</option>
+                        {% if groups %}
+                            {% for group in groups %}
+                                <option value="{{ group.id }}" {% if selected_group_type == group.id|string %}selected{% endif %}>{{ group.name }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="1" {% if selected_group_type == '1' %}selected{% endif %}>微信群</option>
+                            <option value="2" {% if selected_group_type == '2' %}selected{% endif %}>QQ群</option>
+                            <option value="3" {% if selected_group_type == '3' %}selected{% endif %}>QQ频道</option>
+                        {% endif %}
                     </select>
-                </div>
-                <div class="form-group">
-                    <label for="create_description">描述:</label>
-                    <textarea id="create_description" name="description"></textarea>
-                </div>
-                <button type="submit" class="btn btn-success">添加成员</button>
-            </form>
+                    <label for="search">搜索:</label>
+                    <input type="text" id="search" name="search" value="{{ search_query or '' }}" placeholder="姓名或描述" style="width: 150px;">
+                    <button type="submit" class="btn btn-primary">筛选</button>
+                    <a href="/admin" class="btn">显示全部</a>
+                </form>
+            </div>
+            
+            <!-- 创建新成员表单 -->
+            <div class="form-container">
+                <h2>添加新成员</h2>
+                <form action="/admin/create{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post">
+                    <div class="form-group">
+                        <label for="create_name">姓名:</label>
+                        <input type="text" id="create_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create_score">分数:</label>
+                        <input type="number" id="create_score" name="score" min="0" max="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create_group_type">群组类型:</label>
+                        <select id="create_group_type" name="group_type" required>
+                            {% if groups %}
+                                {% for group in groups %}
+                                    <option value="{{ group.id }}" {% if selected_group_type == group.id|string %}selected{% endif %}>{{ group.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="1" {% if selected_group_type == '1' %}selected{% endif %}>微信群</option>
+                                <option value="2" {% if selected_group_type == '2' %}selected{% endif %}>QQ群</option>
+                                <option value="3" {% if selected_group_type == '3' %}selected{% endif %}>QQ频道</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="create_description">描述:</label>
+                        <textarea id="create_description" name="description"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">添加成员</button>
+                </form>
+            </div>
+            
+            <!-- 成员列表 -->
+            <div class="members-table">
+                <h2>成员列表</h2>
+                <table id="memberTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>分数</th>
+                            <th>群组类型</th>
+                            <th>更新时间</th>
+                            <th>描述</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberList">
+                        {% if members %}
+                            {% for member in members %}
+                            <tr>
+                                <td>{{ member.id }}</td>
+                                <td>{{ member.name }}</td>
+                                <td class="{% if member.score < 5 %}score-low{% endif %}">{{ member.score }}</td>
+                                <td>
+                                    {% if groups %}
+                                        {% for group in groups %}
+                                            {% if member.group_id == group.id or member.group_type == group.id %}
+                                                {{ group.name }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        {% if member.group_id == 1 or member.group_type == 1 %}微信群
+                                        {% elif member.group_id == 2 or member.group_type == 2 %}QQ群
+                                        {% elif member.group_id == 3 or member.group_type == 3 %}QQ频道
+                                        {% elif member.group_type == 'wechat' %}微信群
+                                        {% elif member.group_type == 'qq' %}QQ群
+                                        {% elif member.group_type == 'qq_channel' %}QQ频道
+                                        {% else %}未知
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ member.updated_at | format_datetime }}
+                                </td>
+                                <td style="max-width: 200px; word-wrap: break-word;">{{ member.description or '暂无描述' }}</td>
+                                <td class="action-buttons">
+                                    <!-- 更新表单 -->
+                                    <form action="/admin/update{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post" style="display: inline;">
+                                        <input type="hidden" name="id" value="{{ member.id }}">
+                                        <input type="text" name="name" value="{{ member.name }}" required style="width: 80px; padding: 5px;">
+                                        <input type="number" name="score" value="{{ member.score }}" min="0" max="10" required style="width: 50px; padding: 5px;">
+                                        <select name="group_type" style="width: 80px; padding: 5px;">
+                                            {% if groups %}
+                                                {% for group in groups %}
+                                                    <option value="{{ group.id }}" {% if member.group_id == group.id or member.group_type == group.id %}selected{% endif %}>{{ group.name }}</option>
+                                                {% endfor %}
+                                            {% else %}
+                                                <option value="1" {% if member.group_id == 1 or member.group_type == 1 or member.group_type == 'wechat' %}selected{% endif %}>微信群</option>
+                                                <option value="2" {% if member.group_id == 2 or member.group_type == 2 or member.group_type == 'qq' %}selected{% endif %}>QQ群</option>
+                                                <option value="3" {% if member.group_id == 3 or member.group_type == 3 or member.group_type == 'qq_channel' %}selected{% endif %}>QQ频道</option>
+                                            {% endif %}
+                                        </select>
+                                        <input type="text" name="description" value="{{ member.description or '' }}" style="width: 100px; padding: 5px;">
+                                        <button type="submit" class="btn btn-primary" style="padding: 5px 10px;">更新</button>
+                                    </form>
+                                    <!-- 删除按钮 -->
+                                    <form action="/admin/delete/{{ member.id }}{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post" style="display: inline;" onsubmit="return confirm('确定要删除成员 {{ member.name }} 吗？')">
+                                        <button type="submit" class="btn btn-danger" style="padding: 5px 10px;">删除</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="error">暂无成员数据</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
         
-        <!-- 成员列表 -->
-        <div class="members-table">
-            <h2>成员列表</h2>
-            <table id="memberTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>姓名</th>
-                        <th>分数</th>
-                        <th>群组类型</th>
-                        <th>更新时间</th>
-                        <th>描述</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="memberList">
-                    {% if members %}
-                        {% for member in members %}
-                        <tr>
-                            <td>{{ member.id }}</td>
-                            <td>{{ member.name }}</td>
-                            <td class="{% if member.score < 5 %}score-low{% endif %}">{{ member.score }}</td>
-                            <td>
-                                {% if member.group_type == 1 %}微信群
-                                {% elif member.group_type == 2 %}QQ群
-                                {% elif member.group_type == 3 %}QQ频道
-                                {% elif member.group_type == 'wechat' %}微信群
-                                {% elif member.group_type == 'qq' %}QQ群
-                                {% elif member.group_type == 'qq_channel' %}QQ频道
-                                {% else %}未知
-                                {% endif %}
-                            </td>
-                            <td>
-                                {{ member.updated_at | format_datetime }}
-                            </td>
-                            <td style="max-width: 200px; word-wrap: break-word;">{{ member.description or '暂无描述' }}</td>
-                            <td class="action-buttons">
-                                <!-- 更新表单 -->
-                                <form action="/admin/update{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post" style="display: inline;">
-                                    <input type="hidden" name="id" value="{{ member.id }}">
-                                    <input type="text" name="name" value="{{ member.name }}" required style="width: 80px; padding: 5px;">
-                                    <input type="number" name="score" value="{{ member.score }}" min="0" max="10" required style="width: 50px; padding: 5px;">
-                                    <select name="group_type" style="width: 80px; padding: 5px;">
-                                        <option value="wechat" {% if member.group_type == 1 or member.group_type == 'wechat' %}selected{% endif %}>微信群</option>
-                                        <option value="qq" {% if member.group_type == 2 or member.group_type == 'qq' %}selected{% endif %}>QQ群</option>
-                                        <option value="qq_channel" {% if member.group_type == 3 or member.group_type == 'qq_channel' %}selected{% endif %}>QQ频道</option>
-                                    </select>
-                                    <input type="text" name="description" value="{{ member.description or '' }}" style="width: 100px; padding: 5px;">
-                                    <button type="submit" class="btn btn-primary" style="padding: 5px 10px;">更新</button>
-                                </form>
-                                <!-- 删除按钮 -->
-                                <form action="/admin/delete/{{ member.id }}{% if selected_group_type or search_query %}?{% if selected_group_type %}group_type={{ selected_group_type }}{% endif %}{% if selected_group_type and search_query %}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}{% endif %}" method="post" style="display: inline;" onsubmit="return confirm('确定要删除成员 {{ member.name }} 吗？')">
-                                    <button type="submit" class="btn btn-danger" style="padding: 5px 10px;">删除</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="7" class="error">暂无成员数据</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+        <!-- 群信息管理 Tab -->
+        <div id="group-info" class="tab-content">
+            <div class="management-section">
+                <h2>群名称管理</h2>
+                <form id="groupNameForm">
+                    <div class="form-group">
+                        <label for="groupNameType">群组类型:</label>
+                        <select id="groupNameType" class="form-group">
+                            {% if groups %}
+                                {% for group in groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="wechat">微信群</option>
+                                <option value="qq">QQ群</option>
+                                <option value="qq_channel">QQ频道</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupName">群名称:</label>
+                        <input type="text" id="groupName" class="form-group" placeholder="请输入群名称">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveGroupName()">保存群名称</button>
+                </form>
+            </div>
+            
+            <div class="management-section">
+                <h2>群公告管理</h2>
+                <form id="groupNoticeForm">
+                    <div class="form-group">
+                        <label for="noticeGroupType">群组类型:</label>
+                        <select id="noticeGroupType" class="form-group">
+                            {% if groups %}
+                                {% for group in groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="wechat">微信群</option>
+                                <option value="qq">QQ群</option>
+                                <option value="qq_channel">QQ频道</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupNotice">群公告:</label>
+                        <textarea id="groupNotice" class="form-group" placeholder="请输入群公告内容"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveGroupNotice()">保存群公告</button>
+                </form>
+            </div>
         </div>
     </div>
+    
+    <script>
+        function openTab(evt, tabName) {
+            // 隐藏所有tab内容
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            // 移除所有tab按钮的active类
+            var tabButtons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            
+            // 显示当前tab内容，并给当前按钮添加active类
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+        
+        function saveGroupName() {
+            // 获取表单数据
+            var groupNameType = document.getElementById('groupNameType').value;
+            var groupName = document.getElementById('groupName').value;
+                    
+            // 验证输入
+            if (!groupNameType || !groupName.trim()) {
+                alert('请填写群组类型和群名称');
+                return;
+            }
+                    
+            // 发送AJAX请求
+            fetch(`/admin/update-group-name`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content
+                },
+                body: JSON.stringify({
+                    group_id: groupNameType,
+                    name: groupName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('群名称更新成功');
+                    // 重新加载页面以显示更新后的群名称
+                    location.reload();
+                } else {
+                    alert('更新失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误，请重试');
+            });
+        }
+        
+        function saveGroupNotice() {
+            // 获取表单数据
+            var noticeGroupType = document.getElementById('noticeGroupType').value;
+            var groupNotice = document.getElementById('groupNotice').value;
+                    
+            // 验证输入
+            if (!noticeGroupType) {
+                alert('请选择群组类型');
+                return;
+            }
+                    
+            // 发送AJAX请求
+            fetch(`/admin/update-group-notice/${noticeGroupType}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content
+                },
+                body: JSON.stringify({
+                    notice: groupNotice
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('群公告更新成功');
+                    // 重新加载页面以显示更新后的群公告
+                    location.reload();
+                } else {
+                    alert('更新失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误，请重试');
+            });
+        }
+    </script>
 </body>
 </html>

@@ -50,6 +50,38 @@ def create_app():
     if not SUPABASE_KEY:
         print("错误: 未设置SUPABASE_KEY环境变量")
     
+    def load_groups_data():
+        """从Supabase加载群组数据"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return None
+            
+        try:
+            # 构建请求URL
+            url = f"{SUPABASE_URL}/rest/v1/groups?order=id"
+                
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            
+            # 发送GET请求获取数据
+            response = requests.get(url, headers=headers)
+            
+            if response.ok:
+                groups = response.json()
+                return groups
+            else:
+                print(f"获取群组数据失败: {response.text}")
+                return None
+                
+        except Exception as e:
+            print(f"从Supabase加载群组数据时出错: {e}")
+            import traceback
+            traceback.print_exc()  # 打印详细的错误堆栈
+            return None
+
     def load_member_data(group_type=None, search_query=None):
         """从Supabase加载成员数据，按ID排序"""
         if not SUPABASE_URL or not SUPABASE_KEY:
@@ -73,7 +105,7 @@ def create_app():
                     'qq_channel': 3
                 }
                 group_type_int = group_type_map.get(group_type, 1)  # 默认为1(微信群)
-                params.append(f"group_type=eq.{group_type_int}")
+                params.append(f"group_id=eq.{group_type_int}")
             
             # 添加模糊搜索参数
             if search_query:
@@ -102,13 +134,13 @@ def create_app():
                 
                 # 为旧数据添加group_type字段（向后兼容）
                 for member in members:
-                    if 'group_type' not in member and group_type:
+                    if 'group_id' not in member and group_type:
                         group_type_map = {
                             'wechat': 1,
                             'qq': 2,
                             'qq_channel': 3
                         }
-                        member['group_type'] = group_type_map.get(group_type, 1)
+                        member['group_id'] = group_type_map.get(group_type, 1)
                 
                 return {"members": members}
             else:
@@ -154,7 +186,7 @@ def create_app():
             }
             group_type_int = group_type_map.get(group_type)
             if group_type_int is not None:
-                data["group_type"] = group_type_int
+                data["group_id"] = group_type_int
             
             # 发送PATCH请求更新数据
             response = requests.patch(url, headers=headers, json=data)
@@ -201,7 +233,7 @@ def create_app():
                 }
                 group_type_int = group_type_map.get(group_type)
                 if group_type_int is not None:
-                    data["group_type"] = group_type_int
+                    data["group_id"] = group_type_int
             
             # 发送POST请求创建数据
             response = requests.post(url, headers=headers, json=data)
@@ -242,6 +274,40 @@ def create_app():
                 
         except Exception as e:
             print(f"删除Supabase数据时出错: {e}")
+            return False
+
+    def update_group_name_data(group_id, name):
+        """更新群组名称"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+            
+        try:
+            # 构建请求URL
+            url = f"{SUPABASE_URL}/rest/v1/groups?id=eq.{group_id}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            
+            # 构造要更新的数据
+            data = {
+                "name": name
+            }
+            
+            # 发送PATCH请求更新数据
+            response = requests.patch(url, headers=headers, json=data)
+            
+            if response.ok:
+                return True
+            else:
+                print(f"更新群组名称失败: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"更新Supabase群组数据时出错: {e}")
             return False
 
     def verify_admin_user(username, password):
@@ -404,13 +470,15 @@ def create_app():
         print("访问首页路由")  # 调试信息
         # 首页不加载特定群组的数据
         data = load_member_data()
+        # 加载群组数据
+        groups = load_groups_data()
         if data is None:
             print("无法从Supabase加载数据")
             return "无法从Supabase加载数据", 500
         
         # 显示所有成员数据
         print(f"首页加载了 {len(data['members'])} 条数据")  # 调试信息
-        return render_template('index.html', members=data['members'], 
+        return render_template('index.html', members=data['members'], groups=groups,
                               last_updated="未知", active_nav="home")
 
     @app.route('/wechat-members')
@@ -421,16 +489,18 @@ def create_app():
         
         print("访问微信群成员路由")  # 调试信息
         data = load_member_data('wechat', search_query)
+        # 加载群组数据
+        groups = load_groups_data()
         if data is None:
             print("无法从Supabase加载微信群成员数据")
             return "无法从Supabase加载数据", 500
         
         # 过滤出微信群成员（兼容旧数据）
         wechat_members = [member for member in data['members'] 
-                         if member.get('group_type') == 1 or 'group_type' not in member]
+                         if member.get('group_id') == 1 or 'group_id' not in member]
         print(f"微信群成员页面加载了 {len(wechat_members)} 条数据")  # 调试信息
         
-        return render_template('index.html', members=wechat_members, 
+        return render_template('index.html', members=wechat_members, groups=groups,
                               last_updated="未知", active_nav="wechat", search_query=search_query)
 
     @app.route('/qq-group')
@@ -441,16 +511,18 @@ def create_app():
         
         print("访问QQ群成员路由")  # 调试信息
         data = load_member_data('qq', search_query)
+        # 加载群组数据
+        groups = load_groups_data()
         if data is None:
             print("无法从Supabase加载QQ群成员数据")
             return "无法从Supabase加载数据", 500
         
         # 过滤出QQ群成员（兼容旧数据）
         qq_members = [member for member in data['members'] 
-                     if member.get('group_type') == 2 or 'group_type' not in member]
+                     if member.get('group_id') == 2 or 'group_id' not in member]
         print(f"QQ群成员页面加载了 {len(qq_members)} 条数据")  # 调试信息
         
-        return render_template('index.html', members=qq_members, 
+        return render_template('index.html', members=qq_members, groups=groups,
                               last_updated="未知", active_nav="qq", search_query=search_query)
 
     @app.route('/qq-channel')
@@ -461,16 +533,18 @@ def create_app():
         
         print("访问QQ频道成员路由")  # 调试信息
         data = load_member_data('qq_channel', search_query)
+        # 加载群组数据
+        groups = load_groups_data()
         if data is None:
             print("无法从Supabase加载QQ频道成员数据")
             return "无法从Supabase加载数据", 500
         
         # 过滤出QQ频道成员（兼容旧数据）
         qq_channel_members = [member for member in data['members'] 
-                             if member.get('group_type') == 3 or 'group_type' not in member]
+                             if member.get('group_id') == 3 or 'group_id' not in member]
         print(f"QQ频道成员页面加载了 {len(qq_channel_members)} 条数据")  # 调试信息
         
-        return render_template('index.html', members=qq_channel_members, 
+        return render_template('index.html', members=qq_channel_members, groups=groups,
                               last_updated="未知", active_nav="qq_channel", search_query=search_query)
 
     @app.route('/admin/login', methods=['GET', 'POST'])
@@ -504,6 +578,9 @@ def create_app():
         group_type = request.args.get('group_type')
         search_query = request.args.get('search')
         
+        # 加载群组数据
+        groups = load_groups_data()
+        
         # 如果有指定群组类型或搜索关键词，则按条件加载数据
         data = load_member_data(group_type, search_query)
             
@@ -520,10 +597,10 @@ def create_app():
             group_type_int = group_type_map.get(group_type)
             if group_type_int:
                 filtered_members = [member for member in data['members'] 
-                                  if member.get('group_type') == group_type_int]
+                                  if member.get('group_id') == group_type_int]
                 data['members'] = filtered_members
         
-        return render_template('admin.html', members=data['members'], 
+        return render_template('admin.html', members=data['members'], groups=groups,
                              selected_group_type=group_type, search_query=search_query)
 
     @app.route('/admin/change-password', methods=['GET', 'POST'])
@@ -551,6 +628,24 @@ def create_app():
                 return render_template('change_password.html', error='修改密码失败，请检查旧密码是否正确')
         
         return render_template('change_password.html')
+
+    @app.route('/admin/update-group-name', methods=['POST'])
+    @login_required
+    def update_group_name():
+        """更新群组名称"""
+        group_id = request.form.get('group_id')
+        name = request.form.get('name')
+        
+        if not group_id or not name:
+            return jsonify({'success': False, 'message': '缺少必要参数'})
+        
+        # 更新群组名称
+        success = update_group_name_data(group_id, name)
+        
+        if success:
+            return jsonify({'success': True, 'message': '群组名称更新成功'})
+        else:
+            return jsonify({'success': False, 'message': '群组名称更新失败'})
 
     @app.route('/admin/create', methods=['POST'])
     @login_required

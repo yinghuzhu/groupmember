@@ -121,9 +121,22 @@
         <!-- 添加导航栏 -->
         <div class="navbar">
             <a href="/" class="{% if active_nav == 'home' %}active{% endif %}">首页</a>
-            <a href="/wechat-members" class="{% if active_nav == 'wechat' %}active{% endif %}">微信群成员</a>
-            <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">QQ群成员</a>
-            <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">QQ频道成员</a>
+            {% if groups %}
+                {% for group in groups %}
+                    {% if group.id == 1 %}
+                        <a href="/wechat-members" class="{% if active_nav == 'wechat' %}active{% endif %}">{{ group.name }}成员</a>
+                    {% elif group.id == 2 %}
+                        <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">{{ group.name }}成员</a>
+                    {% elif group.id == 3 %}
+                        <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">{{ group.name }}成员</a>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- 回退到硬编码的导航链接 -->
+                <a href="/wechat-members" class="{% if active_nav == 'wechat' %}active{% endif %}">中国交通文化交流群成员（微信）</a>
+                <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">中国交通文化交流群成员（QQ）</a>
+                <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">中国交通摄影交流频道成员</a>
+            {% endif %}
         </div>
         
         <!-- 添加搜索表单 -->
