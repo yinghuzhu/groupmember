@@ -50,7 +50,96 @@ def create_app():
     if not SUPABASE_KEY:
         print("错误: 未设置SUPABASE_KEY环境变量")
     
+    def load_group_notice(group_id):
+        """获取指定群组的最新公告"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return None
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/group_notices?group_id=eq.{group_id}&order=updated_at.desc&limit=1"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            response = requests.get(url, headers=headers)
+            if response.ok:
+                notices = response.json()
+                return notices[0] if notices else None
+            else:
+                print(f"获取群公告失败: {response.text}")
+                return None
+        except Exception as e:
+            print(f"获取群公告时出错: {e}")
+            return None
+
     def load_groups_data():
+        """从Supabase加载群组数据"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return None
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/groups?order=id"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            response = requests.get(url, headers=headers)
+            if response.ok:
+                groups = response.json()
+                return groups
+            else:
+                print(f"获取群组数据失败: {response.text}")
+                return None
+        except Exception as e:
+            print(f"从Supabase加载群组数据时出错: {e}")
+            import traceback
+            traceback.print_exc()  # 打印详细的错误堆栈
+            return None
+
+    def update_group_notice(group_id, notice, author=None):
+        """更新或创建群公告（只保留最新一条）"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+        try:
+            now = datetime.utcnow().isoformat() + 'Z'
+            # 先查是否有公告
+            old_notice = load_group_notice(group_id)
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            if old_notice:
+                # 更新
+                url = f"{SUPABASE_URL}/rest/v1/group_notices?id=eq.{old_notice['id']}"
+                data = {
+                    "notice": notice,
+                    "updated_at": now,
+                }
+                if author:
+                    data["author"] = author
+                response = requests.patch(url, headers=headers, json=data)
+            else:
+                # 创建
+                url = f"{SUPABASE_URL}/rest/v1/group_notices"
+                data = {
+                    "group_id": group_id,
+                    "notice": notice,
+                    "created_at": now,
+                    "updated_at": now,
+                }
+                if author:
+                    data["author"] = author
+                response = requests.post(url, headers=headers, json=data)
+            return response.ok
+        except Exception as e:
+            print(f"更新群公告时出错: {e}")
+            return False
+
         """从Supabase加载群组数据"""
         if not SUPABASE_URL or not SUPABASE_KEY:
             print("Supabase配置缺失")
@@ -468,18 +557,34 @@ def create_app():
     def index():
         """渲染主页面"""
         print("访问首页路由")  # 调试信息
-        # 首页不加载特定群组的数据
         data = load_member_data()
-        # 加载群组数据
         groups = load_groups_data()
+        # 获取所有群组公告（每个群组最新一条）
+        group_notices = {}
+        if groups:
+            for group in groups:
+                notice = load_group_notice(group['id'])
+                group_notices[group['id']] = notice['notice'] if notice else ''
         if data is None:
             print("无法从Supabase加载数据")
             return "无法从Supabase加载数据", 500
-        
-        # 显示所有成员数据
         print(f"首页加载了 {len(data['members'])} 条数据")  # 调试信息
         return render_template('index.html', members=data['members'], groups=groups,
-                              last_updated="未知", active_nav="home")
+                              group_notices=group_notices, last_updated="未知", active_nav="home")
+    @app.route('/admin/update-group-notice/<int:group_id>', methods=['POST'])
+    @login_required
+    def update_group_notice_api(group_id):
+        """后台管理端更新群公告API"""
+        data = request.get_json()
+        notice = data.get('notice')
+        author = session.get('admin_username')
+        if not notice:
+            return jsonify({'success': False, 'message': '公告内容不能为空'})
+        success = update_group_notice(group_id, notice, author)
+        if success:
+            return jsonify({'success': True, 'message': '群公告更新成功'})
+        else:
+            return jsonify({'success': False, 'message': '群公告更新失败'})
 
     @app.route('/wechat-members')
     def wechat_members():

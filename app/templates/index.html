@@ -13,20 +13,20 @@
         }
         body {
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #393B40; /* 修改为 0xFF393B40 */
         }
         .container {
             max-width: 1000px;
             margin: 0 auto;
-            background: white;
+            background: #393B40; /* 修改为 0xFF393B40 */
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
             overflow: hidden;
         }
         h1 {
             text-align: center;
             padding: 15px;
-            background-color: #07C160;
+            background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
         /* 导航栏样式 */
@@ -45,12 +45,12 @@
         }
         
         .navbar a:hover {
-            background-color: #ddd;
+            background-color: #87CEEB; /* 天蓝色主题色 */
             color: black;
         }
         
         .navbar a.active {
-            background-color: #07C160;
+            background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
         table {
@@ -61,37 +61,38 @@
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            color: white; /* 白色文字 */
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #87CEEB; /* 天蓝色主题色 */
             font-weight: bold;
         }
         tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #1a1a1a; /* 深灰色用于交替行 */
         }
         tr:hover {
-            background-color: #f1f1f1;
+            background-color: #333333; /* 悬停效果 */
         }
         .score-low {
-            color: #f44336;
+            color: #FF6B6B; /* 更亮的红色以在黑色背景上可见 */
             font-weight: bold;
         }
         .loading {
             text-align: center;
             padding: 20px;
-            color: #666;
+            color: white; /* 白色文字 */
         }
         .error {
             text-align: center;
             padding: 20px;
-            color: #f44336;
+            color: #FF6B6B; /* 更亮的红色 */
         }
         .refresh-btn {
             display: block;
             width: calc(100% - 30px);
             margin: 15px auto;
             padding: 10px;
-            background-color: #2196F3;
+            background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
             border: none;
             border-radius: 4px;
@@ -101,106 +102,149 @@
         .last-updated {
             text-align: center;
             padding: 10px;
-            color: #666;
+            color: white; /* 白色文字 */
             font-size: 14px;
         }
         .welcome-text {
             text-align: center;
             padding: 40px 20px;
             font-size: 18px;
-            color: #666;
+            color: white; /* 白色文字 */
         }
         .welcome-text h2 {
             margin-bottom: 20px;
-            color: #333;
+            color: white; /* 白色文字 */
+        }
+        .welcome-text p {
+            color: white; /* 白色文字 */
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- 添加导航栏 -->
-        <div class="navbar">
-            <a href="/" class="{% if active_nav == 'home' %}active{% endif %}">首页</a>
-            {% if groups %}
-                {% for group in groups %}
-                    {% if group.id == 1 %}
-                        <a href="/wechat-members" class="{% if active_nav == 'wechat' %}active{% endif %}">{{ group.name }}成员</a>
-                    {% elif group.id == 2 %}
-                        <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">{{ group.name }}成员</a>
-                    {% elif group.id == 3 %}
-                        <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">{{ group.name }}成员</a>
-                    {% endif %}
-                {% endfor %}
-            {% else %}
-                <!-- 回退到硬编码的导航链接 -->
-                <a href="/wechat-members" class="{% if active_nav == 'wechat' %}active{% endif %}">中国交通文化交流群成员（微信）</a>
-                <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">中国交通文化交流群成员（QQ）</a>
-                <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">中国交通摄影交流频道成员</a>
-            {% endif %}
-        </div>
-        
-        <!-- 添加搜索表单 -->
-        {% if active_nav != 'home' %}
-        <div style="padding: 15px; background-color: #f9f9f9; border-bottom: 1px solid #ddd;">
-            <form method="GET" action="" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <label for="search">搜索:</label>
-                <input type="text" id="search" name="search" value="{{ search_query or '' }}" 
-                       placeholder="姓名或描述" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                <button type="submit" style="padding: 8px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">搜索</button>
-                {% if search_query %}
-                <a href="{{ request.path }}" style="padding: 8px 16px; background-color: #f44336; color: white; text-decoration: none; border-radius: 4px;">清除搜索</a>
-                {% endif %}
-            </form>
-        </div>
+<div class="container">
+    <!-- 导航栏（只出现一次） -->
+    <div class="navbar">
+        <a href="/" class="{% if active_nav == 'home' %}active{% endif %}">首页</a>
+        {% if groups %}
+        {% for group in groups %}
+        {% if group.id == 1 %}
+        <a href="/wechat-members" class="{% if active_nav == 'wechat' %}active{% endif %}">{{ group.name }}成员</a>
+        {% elif group.id == 2 %}
+        <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">{{ group.name }}成员</a>
+        {% elif group.id == 3 %}
+        <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">{{ group.name }}成员</a>
         {% endif %}
-        
-        {% if active_nav == 'home' %}
-        <h1>欢迎来到群成员管理系统</h1>
-        <div class="welcome-text">
-            <h2>欢迎来到群成员管理系统</h2>
-            <p>请选择上方导航栏中的相应页面查看不同群组的成员信息</p>
-        </div>
+        {% endfor %}
         {% else %}
-        <h1>群成员分数展示</h1>
-        
-        {% if members %}
-            <table id="memberTable">
-                <thead>
-                    <tr>
-                        <th>姓名</th>
-                        <th>分数</th>
-                        <th>描述</th>
-                    </tr>
-                </thead>
-                <tbody id="memberList">
-                    {% for member in members %}
-                    <tr>
-                        <td>{{ member.name }}</td>
-                        <td class="{% if member.score < 5 %}score-low{% endif %}">{{ member.score }}</td>
-                        <td>{{ member.description or '暂无描述' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            <button class="refresh-btn" id="refreshBtn" onclick="location.reload()">刷新数据</button>
-        {% else %}
-            <div class="error">
-                {% if search_query %}
-                    未找到与 "{{ search_query }}" 相关的成员数据
-                {% else %}
-                    暂无成员数据
-                {% endif %}
-            </div>
-        {% endif %}
+        <a href="/wechat-members"
+           class="{% if active_nav == 'wechat' %}active{% endif %}">中国交通文化交流群成员（微信）</a>
+        <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">中国交通文化交流群成员（QQ）</a>
+        <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">中国交通摄影交流频道成员</a>
         {% endif %}
     </div>
 
-    <script>
-        // 刷新按钮事件
-        document.getElementById('refreshBtn').addEventListener('click', function() {
-            location.reload();
-        });
-    </script>
+    {% if active_nav == 'home' %}
+    <!-- 首页内容 -->
+    <h1>欢迎来到群成员管理系统</h1>
+    <div class="welcome-text">
+        <h2>欢迎来到群成员管理系统</h2>
+        <p>请选择上方导航栏中的相应页面查看不同群组的成员信息</p>
+    </div>
+
+    <!-- 群公告展示区（欢迎语下方） -->
+    {% if group_notices and groups %}
+    <div style="margin: 32px auto 0 auto; padding: 0 0 24px 0; max-width: 700px;">
+        <div style="background: #222; border-radius: 8px; box-shadow: 0 2px 8px rgba(135,206,235,0.08); padding: 18px 28px;">
+            <h2 style="color:#87CEEB; text-align:center; margin-bottom:18px; font-size:22px; font-weight:600; letter-spacing:2px;">
+                群公告</h2>
+            {% for group in groups %}
+            {% if group_notices[group.id] %}
+            <div style="margin-bottom:14px; background: #181818; border-left: 4px solid #87CEEB; padding: 12px 18px; border-radius: 5px; color: #fff; font-size: 17px;">
+                <strong>{{ group.name }}：</strong>
+                <span>{{ group_notices[group.id] }}</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- 成员页面内容 -->
+
+    <!-- 搜索表单 -->
+    <div style="padding: 15px; background-color: #1a1a1a; border-bottom: 1px solid #87CEEB;">
+        <form method="GET" action="" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <label for="search" style="color: white;">搜索:</label>
+            <input type="text" id="search" name="search" value="{{ search_query or '' }}"
+                   placeholder="姓名或描述"
+                   style="padding: 8px; border: 1px solid #87CEEB; border-radius: 4px; background-color: #333333; color: white;">
+            <button type="submit"
+                    style="padding: 8px 16px; background-color: #87CEEB; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                搜索
+            </button>
+            {% if search_query %}
+            <a href="{{ request.path }}"
+               style="padding: 8px 16px; background-color: #FF6B6B; color: white; text-decoration: none; border-radius: 4px;">清除搜索</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <h1>群成员分数展示</h1>
+
+    {% if members %}
+    <table id="memberTable">
+        <thead>
+        <tr>
+            <th>姓名</th>
+            <th>分数</th>
+            <th>描述</th>
+        </tr>
+        </thead>
+        <tbody id="memberList">
+        {% for member in members %}
+        <tr>
+            <td>{{ member.name }}</td>
+            <td class="{% if member.score < 5 %}score-low{% endif %}">{{ member.score }}</td>
+            <td>{{ member.description or '暂无描述' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <button class="refresh-btn" id="refreshBtn">刷新数据</button>
+    {% else %}
+    <div class="error">
+        {% if search_query %}
+        未找到与 "{{ search_query }}" 相关的成员数据
+        {% else %}
+        暂无成员数据
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div class="last-updated">
+        最后更新: <span id="lastUpdated">{{ last_updated or "未知" }}</span>
+    </div>
+</div>
+
+<script>
+    // 刷新按钮事件处理
+    document.addEventListener('DOMContentLoaded', function() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                location.reload();
+            });
+        }
+
+        // 更新最后更新时间（可选）
+        const lastUpdatedElement = document.getElementById('lastUpdated');
+        if (lastUpdatedElement && lastUpdatedElement.textContent === "未知") {
+            const now = new Date();
+            lastUpdatedElement.textContent = now.toLocaleString('zh-CN');
+        }
+    });
+</script>
 </body>
 </html>

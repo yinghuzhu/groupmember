@@ -12,24 +12,25 @@
             font-family: Arial, sans-serif;
         }
         body {
-            background-color: #f5f5f5;
+            background-color: #000000; /* 黑色背景 */
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
         .login-container {
-            background: white;
+            background: #000000; /* 黑色背景 */
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
             width: 100%;
             max-width: 400px;
+            border: 1px solid #87CEEB; /* 天蓝色边框 */
         }
         h2 {
             text-align: center;
             margin-bottom: 1.5rem;
-            color: #333;
+            color: #87CEEB; /* 天蓝色主题色 */
         }
         .form-group {
             margin-bottom: 1rem;
@@ -38,19 +39,21 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: bold;
-            color: #555;
+            color: white; /* 白色文字 */
         }
         input {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #ddd;
+            border: 1px solid #87CEEB; /* 天蓝色边框 */
             border-radius: 4px;
             font-size: 1rem;
+            background-color: #333333; /* 深灰背景 */
+            color: white; /* 白色文字 */
         }
         button {
             width: 100%;
             padding: 0.75rem;
-            background-color: #2196F3;
+            background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
             border: none;
             border-radius: 4px;
@@ -59,10 +62,10 @@
             margin-top: 1rem;
         }
         button:hover {
-            background-color: #0b7dda;
+            background-color: #5DADE2; /* 天蓝色的深色变体 */
         }
         .error {
-            color: #f44336;
+            color: #FF6B6B; /* 更亮的红色 */
             text-align: center;
             margin-bottom: 1rem;
         }
