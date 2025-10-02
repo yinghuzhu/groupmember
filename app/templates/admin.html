@@ -11,18 +11,23 @@
             padding: 0;
             font-family: Arial, sans-serif;
         }
+        
+        /* 默认浅色主题样式 */
         body {
             padding: 20px;
-            background-color: #000000; /* 黑色背景 */
+            background-color: #ffffff; /* 浅色背景 */
         }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: #000000; /* 黑色背景 */
+            background: #ffffff; /* 浅色背景 */
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            color: #000000; /* 深色文字 */
         }
+        
         .header {
             display: flex;
             justify-content: space-between;
@@ -31,6 +36,7 @@
             background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
+        
         h1 {
             text-align: center;
             padding: 15px;
@@ -38,11 +44,13 @@
             color: white;
             margin: 0;
         }
+        
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
         }
+        
         .logout-btn, .change-password-btn {
             color: white;
             padding: 8px 16px;
@@ -52,76 +60,94 @@
             text-decoration: none;
             font-size: 0.9rem;
         }
+        
         .logout-btn {
             background-color: #87CEEB; /* 天蓝色主题色 */
         }
+        
         .change-password-btn {
             background-color: #87CEEB; /* 天蓝色主题色 */
         }
+        
         .logout-btn:hover {
             background-color: #5DADE2; /* 天蓝色的深色变体 */
         }
+        
         .change-password-btn:hover {
             background-color: #5DADE2; /* 天蓝色的深色变体 */
         }
+        
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
+        
         th, td {
             padding: 15px; /* 增加内边距使内容更宽松 */
             text-align: left;
             border-bottom: 1px solid #ddd;
-            color: white; /* 白色文字以在黑色背景上清晰可见 */
+            color: #212529; /* 深色文字 */
         }
+        
         th {
             background-color: #87CEEB; /* 天蓝色主题色 */
             font-weight: bold;
             font-size: 14px; /* 调整字体大小 */
+            color: white;
         }
+        
         tr:nth-child(even) {
-            background-color: #1a1a1a; /* 深灰色用于交替行 */
+            background-color: #f8f9fa; /* 浅色用于交替行 */
         }
+        
         tr:hover {
-            background-color: #333333; /* 悬停效果 */
+            background-color: #e9ecef; /* 悬停效果 */
         }
+        
         .score-low {
-            color: #FF6B6B; /* 更亮的红色以在黑色背景上可见 */
+            color: #dc3545; /* 红色以在浅色背景上可见 */
             font-weight: bold;
         }
+        
         .loading {
             text-align: center;
             padding: 20px;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         .error {
             text-align: center;
             padding: 20px;
-            color: #FF6B6B; /* 更亮的红色 */
+            color: #dc3545; /* 红色 */
         }
+        
         .form-group {
             margin-bottom: 15px;
         }
+        
         .form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         .form-group input, .form-group textarea, .form-group select {
             width: 100%;
             padding: 8px;
             border: 1px solid #87CEEB; /* 天蓝色边框 */
             border-radius: 4px;
             font-size: 14px;
-            background-color: #333333; /* 深灰背景 */
-            color: white; /* 白色文字 */
+            background-color: #ffffff; /* 白色背景 */
+            color: #212529; /* 深色文字 */
         }
+        
         .form-group textarea {
             height: 80px;
             resize: vertical;
         }
+        
         .btn {
             padding: 10px 15px;
             border: none;
@@ -130,40 +156,49 @@
             font-size: 14px;
             margin-right: 5px;
         }
+        
         .btn-primary {
             background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
+        
         .btn-danger {
-            background-color: #FF6B6B; /* 更亮的红色 */
+            background-color: #dc3545; /* 红色 */
             color: white;
         }
+        
         .btn-success {
             background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
+        
         .form-container {
             padding: 20px;
             border-bottom: 1px solid #87CEEB; /* 天蓝色边框 */
         }
+        
         .members-table {
             padding: 20px;
             overflow-x: auto; /* 添加水平滚动条以适应宽表格 */
         }
+        
         .action-buttons {
             display: flex;
             gap: 5px;
         }
+        
         .filter-form {
             padding: 15px 20px;
-            background-color: #1a1a1a; /* 深灰色背景 */
+            background-color: #f8f9fa; /* 浅灰色背景 */
             border-bottom: 1px solid #87CEEB; /* 天蓝色边框 */
         }
+        
         .filter-form select {
             display: inline-block;
             width: auto;
             margin-right: 10px;
         }
+        
         .filter-form input[type="text"] {
             display: inline-block;
             width: auto;
@@ -172,46 +207,113 @@
             border: 1px solid #87CEEB; /* 天蓝色边框 */
             border-radius: 4px;
             font-size: 14px;
-            background-color: #333333; /* 深灰背景 */
-            color: white; /* 白色文字 */
+            background-color: #ffffff; /* 白色背景 */
+            color: #212529; /* 深色文字 */
         }
+        
         .filter-form .btn {
             display: inline-block;
             width: auto;
         }
+        
         .management-section {
             padding: 20px;
             border-bottom: 1px solid #87CEEB; /* 天蓝色边框 */
         }
+        
         .management-section h2 {
             margin-bottom: 15px;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         .management-section form {
             max-width: 600px;
         }
+        
         .tab-container {
             display: flex;
             border-bottom: 1px solid #87CEEB; /* 天蓝色边框 */
             margin-bottom: 20px;
         }
+        
         .tab-button {
             padding: 10px 20px;
-            background-color: #1a1a1a; /* 深灰色背景 */
+            background-color: #f8f9fa; /* 浅灰色背景 */
             border: none;
             cursor: pointer;
             margin-right: 5px;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         .tab-button.active {
             background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
+        
         .tab-content {
             display: none;
         }
+        
         .tab-content.active {
             display: block;
+        }
+        
+        /* 深色主题样式 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #393B40; /* 深色背景 */
+            }
+            
+            .container {
+                background: #393B40; /* 深色背景 */
+                color: #ffffff; /* 浅色文字 */
+                box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+            }
+            
+            th, td {
+                color: white; /* 白色文字 */
+                border-bottom: 1px solid #495057;
+            }
+            
+            tr:nth-child(even) {
+                background-color: #1a1a1a; /* 深灰色用于交替行 */
+            }
+            
+            tr:hover {
+                background-color: #333333; /* 悬停效果 */
+            }
+            
+            .form-group label, 
+            .management-section h2, 
+            .loading, 
+            .tab-button,
+            .filter-form input[type="text"],
+            .form-group input, 
+            .form-group textarea, 
+            .form-group select {
+                color: white; /* 白色文字 */
+            }
+            
+            .form-group input, 
+            .form-group textarea, 
+            .form-group select,
+            .filter-form input[type="text"] {
+                background-color: #333333; /* 深灰背景 */
+                border: 1px solid #87CEEB; /* 天蓝色边框 */
+            }
+            
+            .filter-form {
+                background-color: #1a1a1a; /* 深灰色背景 */
+                border-bottom: 1px solid #87CEEB; /* 天蓝色边框 */
+            }
+            
+            .tab-button {
+                background-color: #1a1a1a; /* 深灰色背景 */
+            }
+            
+            .score-low {
+                color: #FF6B6B; /* 更亮的红色以在黑色背景上可见 */
+            }
         }
     </style>
 </head>
@@ -379,21 +481,21 @@
                 <form id="groupNameForm">
                     <div class="form-group">
                         <label for="groupNameType">群组类型:</label>
-                        <select id="groupNameType" class="form-group">
+                        <select id="groupNameType">
                             {% if groups %}
                                 {% for group in groups %}
                                     <option value="{{ group.id }}">{{ group.name }}</option>
                                 {% endfor %}
                             {% else %}
-                                <option value="wechat">微信群</option>
-                                <option value="qq">QQ群</option>
-                                <option value="qq_channel">QQ频道</option>
+                                <option value="1">微信群</option>
+                                <option value="2">QQ群</option>
+                                <option value="3">QQ频道</option>
                             {% endif %}
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="groupName">群名称:</label>
-                        <input type="text" id="groupName" class="form-group" placeholder="请输入群名称">
+                        <input type="text" id="groupName" placeholder="请输入群名称">
                     </div>
                     <button type="button" class="btn btn-primary" onclick="saveGroupName()">保存群名称</button>
                 </form>
@@ -404,21 +506,21 @@
                 <form id="groupNoticeForm">
                     <div class="form-group">
                         <label for="noticeGroupType">群组类型:</label>
-                        <select id="noticeGroupType" class="form-group">
+                        <select id="noticeGroupType" onchange="loadGroupNotice()">
                             {% if groups %}
                                 {% for group in groups %}
                                     <option value="{{ group.id }}">{{ group.name }}</option>
                                 {% endfor %}
                             {% else %}
-                                <option value="wechat">微信群</option>
-                                <option value="qq">QQ群</option>
-                                <option value="qq_channel">QQ频道</option>
+                                <option value="1">微信群</option>
+                                <option value="2">QQ群</option>
+                                <option value="3">QQ频道</option>
                             {% endif %}
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="groupNotice">群公告:</label>
-                        <textarea id="groupNotice" class="form-group" placeholder="请输入群公告内容"></textarea>
+                        <textarea id="groupNotice" placeholder="请输入群公告内容"></textarea>
                     </div>
                     <button type="button" class="btn btn-primary" onclick="saveGroupNotice()">保存群公告</button>
                 </form>
@@ -468,7 +570,12 @@
                     name: groupName
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     alert('群名称更新成功');
@@ -484,6 +591,38 @@
             });
         }
         
+        // 当群组选择改变时，加载该群组的公告
+        function loadGroupNotice() {
+            var noticeGroupType = document.getElementById('noticeGroupType').value;
+            var groupNoticeTextarea = document.getElementById('groupNotice');
+            
+            if (!noticeGroupType) {
+                groupNoticeTextarea.value = '';
+                return;
+            }
+            
+            // 发送AJAX请求获取群公告
+            fetch(`/admin/get-group-notice/${noticeGroupType}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    groupNoticeTextarea.value = data.notice || '';
+                } else {
+                    console.error('获取群公告失败:', data.message);
+                    groupNoticeTextarea.value = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                groupNoticeTextarea.value = '';
+            });
+        }
+        
         function saveGroupNotice() {
             // 获取表单数据
             var noticeGroupType = document.getElementById('noticeGroupType').value;
@@ -492,6 +631,11 @@
             // 验证输入
             if (!noticeGroupType) {
                 alert('请选择群组类型');
+                return;
+            }
+            
+            if (!groupNotice.trim()) {
+                alert('请输入群公告内容');
                 return;
             }
                     
@@ -506,7 +650,12 @@
                     notice: groupNotice
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     alert('群公告更新成功');
@@ -521,6 +670,12 @@
                 alert('网络错误，请重试');
             });
         }
+        
+        // 页面加载完成后初始化群公告
+        document.addEventListener('DOMContentLoaded', function() {
+            // 自动加载第一个群组的公告
+            loadGroupNotice();
+        });
     </script>
 </body>
 </html>

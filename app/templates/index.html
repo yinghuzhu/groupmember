@@ -11,34 +11,41 @@
             padding: 0;
             font-family: Arial, sans-serif;
         }
+        
+        /* 默认浅色主题样式 */
         body {
             padding: 20px;
-            background-color: #393B40; /* 修改为 0xFF393B40 */
+            background-color: #ffffff; /* 浅色背景 */
         }
+        
         .container {
             max-width: 1000px;
             margin: 0 auto;
-            background: #393B40; /* 修改为 0xFF393B40 */
+            background: #ffffff; /* 浅色背景 */
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            color: #000000; /* 深色文字 */
         }
+        
         h1 {
             text-align: center;
             padding: 15px;
             background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
+        
         /* 导航栏样式 */
         .navbar {
-            background-color: #333;
+            background-color: #f8f9fa;
             overflow: hidden;
+            border-bottom: 1px solid #dee2e6;
         }
         
         .navbar a {
             float: left;
             display: block;
-            color: white;
+            color: #212529;
             text-align: center;
             padding: 14px 20px;
             text-decoration: none;
@@ -46,47 +53,57 @@
         
         .navbar a:hover {
             background-color: #87CEEB; /* 天蓝色主题色 */
-            color: black;
+            color: white;
         }
         
         .navbar a.active {
             background-color: #87CEEB; /* 天蓝色主题色 */
             color: white;
         }
+        
         table {
             width: 100%;
             border-collapse: collapse;
         }
+        
         th, td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         th {
             background-color: #87CEEB; /* 天蓝色主题色 */
             font-weight: bold;
+            color: white;
         }
+        
         tr:nth-child(even) {
-            background-color: #1a1a1a; /* 深灰色用于交替行 */
+            background-color: #f8f9fa; /* 浅色用于交替行 */
         }
+        
         tr:hover {
-            background-color: #333333; /* 悬停效果 */
+            background-color: #e9ecef; /* 悬停效果 */
         }
+        
         .score-low {
-            color: #FF6B6B; /* 更亮的红色以在黑色背景上可见 */
+            color: #dc3545; /* 红色以在浅色背景上可见 */
             font-weight: bold;
         }
+        
         .loading {
             text-align: center;
             padding: 20px;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         .error {
             text-align: center;
             padding: 20px;
-            color: #FF6B6B; /* 更亮的红色 */
+            color: #dc3545; /* 红色 */
         }
+        
         .refresh-btn {
             display: block;
             width: calc(100% - 30px);
@@ -99,24 +116,67 @@
             cursor: pointer;
             font-size: 16px;
         }
+        
         .last-updated {
             text-align: center;
             padding: 10px;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
             font-size: 14px;
         }
+        
         .welcome-text {
             text-align: center;
             padding: 40px 20px;
             font-size: 18px;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         .welcome-text h2 {
             margin-bottom: 20px;
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
         }
+        
         .welcome-text p {
-            color: white; /* 白色文字 */
+            color: #212529; /* 深色文字 */
+        }
+        
+        /* 深色主题样式 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #393B40; /* 深色背景 */
+            }
+            
+            .container {
+                background: #393B40; /* 深色背景 */
+                color: #ffffff; /* 浅色文字 */
+                box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+            }
+            
+            .navbar {
+                background-color: #333;
+                border-bottom: 1px solid #495057;
+            }
+            
+            .navbar a {
+                color: white;
+            }
+            
+            th, td {
+                color: white; /* 白色文字 */
+                border-bottom: 1px solid #495057;
+            }
+            
+            tr:nth-child(even) {
+                background-color: #1a1a1a; /* 深灰色用于交替行 */
+            }
+            
+            tr:hover {
+                background-color: #333333; /* 悬停效果 */
+            }
+            
+            .loading, .last-updated, .welcome-text, .welcome-text h2, .welcome-text p {
+                color: white; /* 白色文字 */
+            }
         }
     </style>
 </head>

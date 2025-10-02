@@ -571,6 +571,18 @@ def create_app():
         print(f"首页加载了 {len(data['members'])} 条数据")  # 调试信息
         return render_template('index.html', members=data['members'], groups=groups,
                               group_notices=group_notices, last_updated="未知", active_nav="home")
+
+    @app.route('/admin/get-group-notice/<int:group_id>', methods=['GET'])
+    @login_required
+    def get_group_notice(group_id):
+        """获取指定群组的公告"""
+        notice = load_group_notice(group_id)
+        
+        if notice:
+            return jsonify({'success': True, 'notice': notice['notice']})
+        else:
+            return jsonify({'success': True, 'notice': ''})
+
     @app.route('/admin/update-group-notice/<int:group_id>', methods=['POST'])
     @login_required
     def update_group_notice_api(group_id):
@@ -738,8 +750,10 @@ def create_app():
     @login_required
     def update_group_name():
         """更新群组名称"""
-        group_id = request.form.get('group_id')
-        name = request.form.get('name')
+        # 处理JSON数据
+        data = request.get_json()
+        group_id = data.get('group_id') if data else None
+        name = data.get('name') if data else None
         
         if not group_id or not name:
             return jsonify({'success': False, 'message': '缺少必要参数'})
