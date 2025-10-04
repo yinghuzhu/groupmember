@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑名单管理</title>
+    <style>
+        /* 页面样式 */
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #87CEEB;
+            color: white;
+        }
+        h1 {
+            text-align: center;
+            padding: 15px;
+            background-color: #87CEEB;
+            color: white;
+            margin: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #212529;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #87CEEB;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+            color: #212529;
+        }
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+        .btn-primary {
+            background-color: #87CEEB;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .table-container {
+            padding: 20px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            color: #212529;
+        }
+        th {
+            background-color: #87CEEB;
+            font-weight: bold;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>黑名单管理</h1>
+            <a href="/admin/logout" class="logout-btn">登出</a>
+        </div>
+        
+        <!-- 创建新黑名单成员表单 -->
+        <div class="form-container">
+            <h2>添加黑名单成员</h2>
+            <form action="/admin/blacklist" method="post">
+                <div class="form-group">
+                    <label for="create_name">姓名:</label>
+                    <input type="text" id="create_name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="create_reason">原因:</label>
+                    <textarea id="create_reason" name="reason"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="create_group_type">群组类型:</label>
+                    <select id="create_group_type" name="group_type">
+                        {% if groups %}
+                            {% for group in groups %}
+                                <option value="{{ group.id }}">{{ group.name }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="1">微信群</option>
+                            <option value="2">QQ群</option>
+                            <option value="3">QQ频道</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">添加黑名单成员</button>
+            </form>
+        </div>
+        
+        <!-- 黑名单列表 -->
+        <div class="table-container">
+            <h2>黑名单列表</h2>
+            <table id="blacklistTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>姓名</th>
+                        <th>原因</th>
+                        <th>群组类型</th>
+                        <th>加入时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="blacklistList">
+                    {% if blacklisted_members %}
+                        {% for member in blacklisted_members %}
+                        <tr>
+                            <td>{{ member.id }}</td>
+                            <td>{{ member.name }}</td>
+                            <td>{{ member.reason or '暂无原因' }}</td>
+                            <td>
+                                {% if groups %}
+                                    {% for group in groups %}
+                                        {% if member.group_id == group.id %}
+                                            {{ group.name }}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    {% if member.group_id == 1 %}微信群
+                                    {% elif member.group_id == 2 %}QQ群
+                                    {% elif member.group_id == 3 %}QQ频道
+                                    {% else %}未知
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>{{ member.created_at | format_datetime }}</td>
+                            <td class="action-buttons">
+                                <form action="/admin/blacklist/{{ member.id }}" method="delete" style="display: inline;">
+                                    <button type="submit" class="btn btn-danger">删除</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="error">暂无黑名单成员</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

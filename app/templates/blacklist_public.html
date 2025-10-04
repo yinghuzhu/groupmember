@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑名单</title>
+    <style>
+        body { padding: 20px; background-color: #ffffff; }
+        .container { max-width: 1000px; margin: 0 auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        h1 { text-align: center; padding: 15px; background-color: #87CEEB; color: white; margin: 0; }
+        .navbar { background-color: #f8f9fa; overflow: hidden; border-bottom: 1px solid #dee2e6; }
+        .navbar a { float: left; display: block; color: #212529; text-align: center; padding: 14px 20px; text-decoration: none; }
+        .navbar a:hover { background-color: #87CEEB; color: white; }
+        .navbar a.active { background-color: #87CEEB; color: white; }
+        .filter { padding: 15px; border-bottom: 1px solid #87CEEB; background-color: #f8f9fa; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; color: #212529; }
+        th { background-color: #87CEEB; color: white; }
+        .error { text-align: center; padding: 20px; color: #dc3545; }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #393B40; }
+            .container { background: #393B40; color: #ffffff; box-shadow: 0 2px 10px rgba(255,255,255,0.1); }
+            .navbar { background-color: #333; border-bottom: 1px solid #495057; }
+            .navbar a { color: white; }
+            th, td { color: white; border-bottom: 1px solid #495057; }
+            .filter { background-color: #1a1a1a; border-bottom: 1px solid #87CEEB; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="navbar">
+        <a href="/" class="{% if active_nav == 'home' %}active{% endif %}">首页</a>
+        {% if groups %}
+        {% for group in groups %}
+        {% if group.id == 1 %}
+        <a href="/wechat-members" class="{% if active_nav == 'wechat' %}active{% endif %}">{{ group.name }}成员</a>
+        {% elif group.id == 2 %}
+        <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">{{ group.name }}成员</a>
+        {% elif group.id == 3 %}
+        <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">{{ group.name }}成员</a>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        <a href="/blacklist" class="{% if active_nav == 'blacklist' %}active{% endif %}">黑名单</a>
+    </div>
+
+    <h1>黑名单</h1>
+
+    <div class="filter">
+        <form method="GET" action="/blacklist" style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+            <label for="group">群组:</label>
+            <select id="group" name="group">
+                <option value="">全部群组</option>
+                {% if groups %}
+                    {% for group in groups %}
+                        <option value="{{ group.id }}" {% if selected_group == group.id|string %}selected{% endif %}>{{ group.name }}</option>
+                    {% endfor %}
+                {% else %}
+                    <option value="1" {% if selected_group == '1' %}selected{% endif %}>微信群</option>
+                    <option value="2" {% if selected_group == '2' %}selected{% endif %}>QQ群</option>
+                    <option value="3" {% if selected_group == '3' %}selected{% endif %}>QQ频道</option>
+                {% endif %}
+            </select>
+            <label for="search">搜索:</label>
+            <input type="text" id="search" name="search" value="{{ search_query or '' }}" placeholder="姓名或原因" style="padding:8px;">
+            <button type="submit" style="padding:8px 16px; background-color:#87CEEB; color:white; border:none; border-radius:4px; cursor:pointer;">筛选</button>
+            <a href="/blacklist" style="padding:8px 16px; background-color:#6c757d; color:white; text-decoration:none; border-radius:4px;">清除</a>
+        </form>
+    </div>
+
+    {% if blacklisted_members and blacklisted_members|length > 0 %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>姓名</th>
+                <th>原因</th>
+                <th>群组</th>
+                <th>加入时间</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in blacklisted_members %}
+            <tr>
+                <td>{{ member.id }}</td>
+                <td>{{ member.name }}</td>
+                <td>{{ member.reason or '暂无原因' }}</td>
+                <td>
+                    {% if groups %}
+                        {% for group in groups %}
+                            {% if member.group_id == group.id %}
+                                {{ group.name }}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% if member.group_id == 1 %}微信群{% elif member.group_id == 2 %}QQ群{% elif member.group_id == 3 %}QQ频道{% else %}未知{% endif %}
+                    {% endif %}
+                </td>
+                <td>{{ member.created_at | format_datetime }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="error">暂无黑名单成员</div>
+    {% endif %}
+</div>
+</body>
+</html>
+
