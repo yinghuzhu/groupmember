@@ -140,37 +140,6 @@ def create_app():
             print(f"更新群公告时出错: {e}")
             return False
 
-        """从Supabase加载群组数据"""
-        if not SUPABASE_URL or not SUPABASE_KEY:
-            print("Supabase配置缺失")
-            return None
-            
-        try:
-            # 构建请求URL
-            url = f"{SUPABASE_URL}/rest/v1/groups?order=id"
-                
-            headers = {
-                'apikey': SUPABASE_KEY,
-                'Authorization': f"Bearer {SUPABASE_KEY}",
-                'Content-Type': 'application/json'
-            }
-            
-            # 发送GET请求获取数据
-            response = requests.get(url, headers=headers)
-            
-            if response.ok:
-                groups = response.json()
-                return groups
-            else:
-                print(f"获取群组数据失败: {response.text}")
-                return None
-                
-        except Exception as e:
-            print(f"从Supabase加载群组数据时出错: {e}")
-            import traceback
-            traceback.print_exc()  # 打印详细的错误堆栈
-            return None
-
     def load_member_data(group_type=None, search_query=None):
         """从Supabase加载成员数据，按ID排序"""
         if not SUPABASE_URL or not SUPABASE_KEY:
@@ -543,6 +512,103 @@ def create_app():
             print(f"创建管理员用户时出错: {e}")
             return False
 
+    def load_blacklist_data():
+        """从Supabase加载黑名单数据"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return None
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/blacklist?order=id"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            response = requests.get(url, headers=headers)
+            if response.ok:
+                blacklist = response.json()
+                return blacklist
+            else:
+                print(f"获取黑名单数据失败: {response.text}")
+                return None
+        except Exception as e:
+            print(f"从Supabase加载黑名单数据时出错: {e}")
+            import traceback
+            traceback.print_exc()  # 打印详细的错误堆栈
+            return None
+
+    def create_blacklist_member(name, reason=None, group_type=None):
+        """创建黑名单成员"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+        try:
+            now = datetime.utcnow().isoformat() + 'Z'
+            url = f"{SUPABASE_URL}/rest/v1/blacklist"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            data = {
+                "name": name,
+                "reason": reason,
+                "created_at": now,
+                "updated_at": now,
+            }
+            if group_type:
+                data["group_id"] = group_type
+            
+            response = requests.post(url, headers=headers, json=data)
+            return response.ok
+        except Exception as e:
+            print(f"创建黑名单成员时出错: {e}")
+            return False
+
+    def delete_blacklist_member(blacklist_id):
+        """删除黑名单成员"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/blacklist?id=eq.{blacklist_id}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            response = requests.delete(url, headers=headers)
+            return response.ok
+        except Exception as e:
+            print(f"删除黑名单成员时出错: {e}")
+            return False
+
+    def update_blacklist_member(blacklist_id, name, reason=None):
+        """更新黑名单成员"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+        try:
+            now = datetime.utcnow().isoformat() + 'Z'
+            url = f"{SUPABASE_URL}/rest/v1/blacklist?id=eq.{blacklist_id}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            data = {
+                "name": name,
+                "reason": reason,
+                "updated_at": now,
+            }
+            response = requests.patch(url, headers=headers, json=data)
+            return response.ok
+        except Exception as e:
+            print(f"更新黑名单成员时出错: {e}")
+            return False
+
     def login_required(f):
         """登录验证装饰器"""
         from functools import wraps
@@ -698,6 +764,9 @@ def create_app():
         # 加载群组数据
         groups = load_groups_data()
         
+        # 加载黑名单数据
+        blacklisted_members = load_blacklist_data()
+        
         # 如果有指定群组类型或搜索关键词，则按条件加载数据
         data = load_member_data(group_type, search_query)
             
@@ -718,7 +787,8 @@ def create_app():
                 data['members'] = filtered_members
         
         return render_template('admin.html', members=data['members'], groups=groups,
-                             selected_group_type=group_type, search_query=search_query)
+                             selected_group_type=group_type, search_query=search_query,
+                             blacklisted_members=blacklisted_members)
 
     @app.route('/admin/change-password', methods=['GET', 'POST'])
     @login_required
@@ -859,6 +929,66 @@ def create_app():
         else:
             return "缺少必要参数", 400
 
+    @app.route('/admin/blacklist', methods=['POST'])
+    @login_required
+    def admin_create_blacklist_member():
+        """添加黑名单成员"""
+        name = request.form.get('name')
+        reason = request.form.get('reason')
+        group_type = request.form.get('group_type')
+        
+        if name:
+            success = create_blacklist_member(name, reason, int(group_type) if group_type else None)
+            if success:
+                return redirect(url_for('admin'))
+            else:
+                return "添加黑名单成员失败", 500
+        else:
+            return "姓名是必填项", 400
+
+    @app.route('/admin/blacklist-from-members', methods=['POST'])
+    @login_required
+    def admin_create_blacklist_member_from_existing():
+        """从现有成员中添加到黑名单"""
+        member_id = request.form.get('member_id')
+        reason = request.form.get('reason')
+        group_type = request.form.get('group_type')  # 获取群组类型
+        
+        if member_id:
+            # 获取现有成员信息
+            member_data = load_member_data()
+            if member_data and 'members' in member_data:
+                member = next((m for m in member_data['members'] if m['id'] == int(member_id)), None)
+                if member:
+                    # 将成员添加到黑名单
+                    name = member['name']
+                    # 使用成员的群组ID，如果不存在则使用表单中的群组类型
+                    group_id = member.get('group_id') or (int(group_type) if group_type else None)
+                    success = create_blacklist_member(name, reason, group_id)
+                    if success:
+                        return redirect(url_for('admin'))
+                    else:
+                        return "添加黑名单成员失败", 500
+            return "未找到指定成员", 400
+        else:
+            return "请选择一个成员", 400
+
+    @app.route('/admin/blacklist/<int:blacklist_id>', methods=['POST'])
+    @login_required
+    def admin_delete_blacklist_member(blacklist_id):
+        """删除黑名单成员"""
+        # 检查是否是DELETE方法的模拟
+        method = request.form.get('_method', request.method)
+        
+        if method == 'DELETE' and blacklist_id:
+            success = delete_blacklist_member(blacklist_id)
+            if success:
+                return redirect(url_for('admin'))
+            else:
+                return "删除黑名单成员失败", 500
+        else:
+            return "缺少必要参数", 400
+
     @app.route('/api/members')
     def api_members():
         """提供API接口获取成员数据"""
@@ -867,5 +997,208 @@ def create_app():
             return jsonify({'error': '无法从Supabase加载数据'}), 500
         
         return jsonify(data)
+
+    @app.route('/blacklist')
+    def public_blacklist():
+        """公开黑名单页面，支持按群组与关键词筛选"""
+        # 查询参数
+        group_param = request.args.get('group')
+        search_query = request.args.get('search')
+
+        # 构建 Supabase 查询
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            return "无法从Supabase加载数据", 500
+
+        try:
+            base_url = f"{SUPABASE_URL}/rest/v1/blacklist"
+            params = ["order=created_at.desc"]
+            if group_param:
+                params.append(f"group_id=eq.{group_param}")
+            if search_query:
+                encoded = search_query.replace('%', '%25').replace('*', '%2A')
+                params.append(f"or=(name.ilike.*{encoded}*,reason.ilike.*{encoded}*)")
+
+            url = f"{base_url}?{'&'.join(params)}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            resp = requests.get(url, headers=headers)
+            if not resp.ok:
+                print(f"获取黑名单失败: {resp.text}")
+                return "无法从Supabase加载数据", 500
+            blacklisted_members = resp.json()
+        except Exception as e:
+            print(f"加载黑名单失败: {e}")
+            return "无法从Supabase加载数据", 500
+
+        groups = load_groups_data()
+        return render_template('blacklist_public.html',
+                               blacklisted_members=blacklisted_members,
+                               groups=groups,
+                               selected_group=group_param,
+                               search_query=search_query,
+                               active_nav='blacklist')
+
+    # ================= 黑名单管理 =================
+    def load_blacklist_data():
+        """从Supabase加载黑名单数据，按ID排序"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return None
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/blacklist?order=id"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            response = requests.get(url, headers=headers)
+            if response.ok:
+                return response.json()
+            else:
+                print(f"获取黑名单失败: {response.text}")
+                return None
+        except Exception as e:
+            print(f"从Supabase加载黑名单时出错: {e}")
+            return None
+
+    def create_blacklist_entry(name, reason, group_type):
+        """创建黑名单成员"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/blacklist"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            # 允许传入 group_type 为字符串或数字
+            group_id = None
+            if isinstance(group_type, str) and group_type.isdigit():
+                group_id = int(group_type)
+            elif isinstance(group_type, int):
+                group_id = group_type
+            else:
+                # 兼容传入 wechat/qq/qq_channel
+                group_type_map = {'wechat': 1, 'qq': 2, 'qq_channel': 3}
+                group_id = group_type_map.get(str(group_type))
+            data = {
+                "name": name,
+                "reason": reason,
+                "group_id": group_id
+            }
+            response = requests.post(url, headers=headers, json=data)
+            return response.ok
+        except Exception as e:
+            print(f"创建黑名单失败: {e}")
+            return False
+
+    def create_blacklist_from_member(member_id, reason):
+        """从现有成员创建黑名单记录（复制 name 和 group_id）"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+        try:
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            # 先获取成员
+            member_url = f"{SUPABASE_URL}/rest/v1/members?id=eq.{member_id}&select=id,name,group_id"
+            m_resp = requests.get(member_url, headers=headers)
+            if not m_resp.ok:
+                print(f"查询成员失败: {m_resp.text}")
+                return False
+            members = m_resp.json()
+            if not members:
+                print("未找到成员")
+                return False
+            member = members[0]
+            # 创建黑名单记录
+            bl_url = f"{SUPABASE_URL}/rest/v1/blacklist"
+            bl_headers = dict(headers)
+            bl_headers['Prefer'] = 'return=representation'
+            bl_data = {
+                "name": member.get('name'),
+                "group_id": member.get('group_id'),
+                "reason": reason
+            }
+            bl_resp = requests.post(bl_url, headers=bl_headers, json=bl_data)
+            return bl_resp.ok
+        except Exception as e:
+            print(f"从成员添加黑名单失败: {e}")
+            return False
+
+    def delete_blacklist_entry(entry_id):
+        """删除黑名单成员"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase配置缺失")
+            return False
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/blacklist?id=eq.{entry_id}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            resp = requests.delete(url, headers=headers)
+            return resp.ok
+        except Exception as e:
+            print(f"删除黑名单失败: {e}")
+            return False
+
+    @app.route('/admin/blacklist', methods=['GET', 'POST'])
+    @login_required
+    def admin_blacklist():
+        """黑名单管理页面 + 创建黑名单成员"""
+        if request.method == 'POST':
+            name = request.form.get('name')
+            reason = request.form.get('reason')
+            group_type = request.form.get('group_type')
+            if not name:
+                return "缺少姓名", 400
+            success = create_blacklist_entry(name, reason, group_type)
+            if not success:
+                return "添加黑名单成员失败", 500
+            return redirect(url_for('admin_blacklist'))
+
+        # GET 渲染
+        groups = load_groups_data()
+        blacklisted_members = load_blacklist_data() or []
+        return render_template('blacklist.html', groups=groups, blacklisted_members=blacklisted_members)
+
+    @app.route('/admin/blacklist-from-members', methods=['POST'])
+    @login_required
+    def admin_blacklist_from_members():
+        member_id = request.form.get('member_id')
+        reason = request.form.get('reason')
+        if not member_id:
+            return "缺少成员ID", 400
+        success = create_blacklist_from_member(member_id, reason)
+        if not success:
+            return "添加黑名单成员失败", 500
+        return redirect(url_for('admin_blacklist'))
+
+    @app.route('/admin/blacklist/<int:entry_id>', methods=['POST'])
+    @login_required
+    def admin_blacklist_delete(entry_id):
+        """从表单提交中删除（method override 可选）"""
+        # 兼容 _method=DELETE
+        if request.form.get('_method', '').upper() in ('DELETE',):
+            success = delete_blacklist_entry(entry_id)
+            if not success:
+                return "删除失败", 500
+            return redirect(url_for('admin_blacklist'))
+        # 默认也执行删除
+        success = delete_blacklist_entry(entry_id)
+        if not success:
+            return "删除失败", 500
+        return redirect(url_for('admin_blacklist'))
 
     return app

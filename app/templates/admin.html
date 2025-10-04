@@ -332,6 +332,7 @@
         <div class="tab-container">
             <button class="tab-button active" onclick="openTab(event, 'members')">成员管理</button>
             <button class="tab-button" onclick="openTab(event, 'group-info')">群信息管理</button>
+            <button class="tab-button" onclick="openTab(event, 'blacklist')">黑名单管理</button>
         </div>
         
         <!-- 成员管理 Tab -->
@@ -524,6 +525,113 @@
                     </div>
                     <button type="button" class="btn btn-primary" onclick="saveGroupNotice()">保存群公告</button>
                 </form>
+            </div>
+        </div>
+        
+        <!-- 黑名单管理 Tab -->
+        <div id="blacklist" class="tab-content">
+            <div class="management-section">
+                <h2>添加黑名单成员</h2>
+                <!-- 从现有成员中选择添加到黑名单 -->
+                <form action="/admin/blacklist-from-members" method="post" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label for="existing_member_id">从现有成员中选择:</label>
+                        <select id="existing_member_id" name="member_id" style="width: 300px;">
+                            <option value="">请选择成员</option>
+                            {% if members %}
+                                {% for member in members %}
+                                    <option value="{{ member.id }}">{{ member.name }} (ID: {{ member.id }}, 分数: {{ member.score }})</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <input type="hidden" name="group_type" value="{{ selected_group_type or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="blacklist_reason_existing">原因:</label>
+                        <textarea id="blacklist_reason_existing" name="reason" placeholder="请输入加入黑名单的原因"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">添加到黑名单</button>
+                </form>
+                
+                <!-- 新建成员并添加到黑名单 -->
+                <form action="/admin/blacklist" method="post">
+                    <div class="form-group">
+                        <label for="blacklist_name">新建成员姓名:</label>
+                        <input type="text" id="blacklist_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="blacklist_reason">原因:</label>
+                        <textarea id="blacklist_reason" name="reason" placeholder="请输入加入黑名单的原因"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="blacklist_group_type">群组类型:</label>
+                        <select id="blacklist_group_type" name="group_type">
+                            {% if groups %}
+                                {% for group in groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="1">微信群</option>
+                                <option value="2">QQ群</option>
+                                <option value="3">QQ频道</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">新建并添加到黑名单</button>
+                </form>
+            </div>
+            
+            <div class="management-section">
+                <h2>黑名单列表</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>原因</th>
+                            <th>群组类型</th>
+                            <th>加入时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if blacklisted_members %}
+                            {% for member in blacklisted_members %}
+                            <tr>
+                                <td>{{ member.id }}</td>
+                                <td>{{ member.name }}</td>
+                                <td>{{ member.reason or '暂无原因' }}</td>
+                                <td>
+                                    {% if groups %}
+                                        {% for group in groups %}
+                                            {% if member.group_id == group.id %}
+                                                {{ group.name }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        {% if member.group_id == 1 %}微信群
+                                        {% elif member.group_id == 2 %}QQ群
+                                        {% elif member.group_id == 3 %}QQ频道
+                                        {% else %}未知
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>{{ member.created_at | format_datetime }}</td>
+                                <td>
+                                    <form action="/admin/blacklist/{{ member.id }}" method="post" style="display: inline;" onsubmit="return confirm('确定要将 {{ member.name }} 移出黑名单吗？')">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <button type="submit" class="btn btn-danger">移出黑名单</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6">暂无黑名单成员</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

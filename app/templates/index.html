@@ -195,11 +195,13 @@
         <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">{{ group.name }}成员</a>
         {% endif %}
         {% endfor %}
+        <a href="/blacklist" class="{% if active_nav == 'blacklist' %}active{% endif %}">黑名单</a>
         {% else %}
         <a href="/wechat-members"
            class="{% if active_nav == 'wechat' %}active{% endif %}">中国交通文化交流群成员（微信）</a>
         <a href="/qq-group" class="{% if active_nav == 'qq' %}active{% endif %}">中国交通文化交流群成员（QQ）</a>
         <a href="/qq-channel" class="{% if active_nav == 'qq_channel' %}active{% endif %}">中国交通摄影交流频道成员</a>
+        <a href="/blacklist" class="{% if active_nav == 'blacklist' %}active{% endif %}">黑名单</a>
         {% endif %}
     </div>
 
@@ -215,8 +217,7 @@
     {% if group_notices and groups %}
     <div style="margin: 32px auto 0 auto; padding: 0 0 24px 0; max-width: 700px;">
         <div style="background: #222; border-radius: 8px; box-shadow: 0 2px 8px rgba(135,206,235,0.08); padding: 18px 28px;">
-            <h2 style="color:#87CEEB; text-align:center; margin-bottom:18px; font-size:22px; font-weight:600; letter-spacing:2px;">
-                群公告</h2>
+            <h2 style="color:#87CEEB; text-align:center; margin-bottom:18px; font-size:22px; font-weight:600; letter-spacing:2px;">群公告</h2>
             {% for group in groups %}
             {% if group_notices[group.id] %}
             <div style="margin-bottom:14px; background: #181818; border-left: 4px solid #87CEEB; padding: 12px 18px; border-radius: 5px; color: #fff; font-size: 17px;">
@@ -224,6 +225,22 @@
                 <span>{{ group_notices[group.id] }}</span>
             </div>
             {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 黑名单展示区 -->
+    {% if blacklisted_members %}
+    <div class="blacklist-container">
+        <h2>黑名单</h2>
+        <div class="blacklist-list">
+            {% for member in blacklisted_members %}
+            <div class="blacklist-item">
+                <strong>{{ member.name }}</strong>
+                <p>{{ member.reason or '暂无原因' }}</p>
+                <small>加入时间: {{ member.created_at | format_datetime }}</small>
+            </div>
             {% endfor %}
         </div>
     </div>
