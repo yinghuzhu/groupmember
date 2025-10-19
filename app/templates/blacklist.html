@@ -116,6 +116,10 @@
                     <textarea id="create_reason" name="reason"></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="create_created_at">加入时间:</label>
+                    <input type="datetime-local" id="create_created_at" name="created_at">
+                </div>
+                <div class="form-group">
                     <label for="create_group_type">群组类型:</label>
                     <select id="create_group_type" name="group_type">
                         {% if groups %}

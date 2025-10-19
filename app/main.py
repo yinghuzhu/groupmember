@@ -279,19 +279,9 @@ def create_app():
             data = {
                 "name": name,
                 "score": score,
-                "description": description
+                "description": description,
+                "group_id": group_type
             }
-            
-            # 将字符串类型的group_type转换为整数
-            if group_type is not None:
-                group_type_map = {
-                    'wechat': 1,
-                    'qq': 2,
-                    'qq_channel': 3
-                }
-                group_type_int = group_type_map.get(group_type)
-                if group_type_int is not None:
-                    data["group_id"] = group_type_int
             
             # 发送POST请求创建数据
             response = requests.post(url, headers=headers, json=data)
@@ -537,13 +527,25 @@ def create_app():
             traceback.print_exc()  # 打印详细的错误堆栈
             return None
 
-    def create_blacklist_member(name, reason=None, group_type=None):
+    def create_blacklist_member(name, reason=None, group_type=None, created_at=None):
         """创建黑名单成员"""
         if not SUPABASE_URL or not SUPABASE_KEY:
             print("Supabase配置缺失")
             return False
         try:
-            now = datetime.utcnow().isoformat() + 'Z'
+            # 如果没有提供created_at，则使用当前时间
+            if created_at is None:
+                now = datetime.utcnow().isoformat() + 'Z'
+            else:
+                # 验证并格式化提供的created_at时间
+                try:
+                    # 尝试解析时间字符串
+                    parsed_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    now = parsed_time.isoformat() + 'Z'
+                except ValueError:
+                    # 如果解析失败，使用当前时间
+                    now = datetime.utcnow().isoformat() + 'Z'
+            
             url = f"{SUPABASE_URL}/rest/v1/blacklist"
             headers = {
                 'apikey': SUPABASE_KEY,
@@ -936,9 +938,21 @@ def create_app():
         name = request.form.get('name')
         reason = request.form.get('reason')
         group_type = request.form.get('group_type')
+        created_at = request.form.get('created_at')
+        
+        # 将datetime-local格式转换为UTC时间格式
+        if created_at:
+            try:
+                # datetime-local 输入格式为 "YYYY-MM-DDTHH:MM"
+                dt = datetime.fromisoformat(created_at)
+                # 转换为UTC时间并格式化为ISO格式
+                created_at = dt.utcnow().isoformat() + 'Z'
+            except ValueError:
+                # 如果转换失败，设置为None，让create_blacklist_member使用默认时间
+                created_at = None
         
         if name:
-            success = create_blacklist_member(name, reason, int(group_type) if group_type else None)
+            success = create_blacklist_member(name, reason, int(group_type) if group_type else None, created_at)
             if success:
                 return redirect(url_for('admin'))
             else:
@@ -1001,15 +1015,16 @@ def create_app():
     @app.route('/blacklist')
     def public_blacklist():
         """公开黑名单页面，支持按群组与关键词筛选"""
-        # 查询参数
-        group_param = request.args.get('group')
-        search_query = request.args.get('search')
-
-        # 构建 Supabase 查询
-        if not SUPABASE_URL or not SUPABASE_KEY:
-            return "无法从Supabase加载数据", 500
-
         try:
+            # 查询参数
+            group_param = request.args.get('group')
+            search_query = request.args.get('search')
+
+            # 构建 Supabase 查询
+            if not SUPABASE_URL or not SUPABASE_KEY:
+                print("错误: Supabase配置缺失")
+                return "无法从Supabase加载数据", 500
+
             base_url = f"{SUPABASE_URL}/rest/v1/blacklist"
             params = ["order=created_at.desc"]
             if group_param:
@@ -1019,27 +1034,38 @@ def create_app():
                 params.append(f"or=(name.ilike.*{encoded}*,reason.ilike.*{encoded}*)")
 
             url = f"{base_url}?{'&'.join(params)}"
+            print(f"请求黑名单URL: {url}")  # 调试信息
+            
             headers = {
                 'apikey': SUPABASE_KEY,
                 'Authorization': f"Bearer {SUPABASE_KEY}",
                 'Content-Type': 'application/json'
             }
             resp = requests.get(url, headers=headers)
+            print(f"黑名单响应状态: {resp.status_code}")  # 调试信息
+            
             if not resp.ok:
                 print(f"获取黑名单失败: {resp.text}")
-                return "无法从Supabase加载数据", 500
-            blacklisted_members = resp.json()
-        except Exception as e:
-            print(f"加载黑名单失败: {e}")
-            return "无法从Supabase加载数据", 500
+                # 如果表不存在，返回空列表而不是错误
+                if resp.status_code == 404:
+                    blacklisted_members = []
+                else:
+                    return f"无法从Supabase加载数据: {resp.text}", 500
+            else:
+                blacklisted_members = resp.json()
 
-        groups = load_groups_data()
-        return render_template('blacklist_public.html',
-                               blacklisted_members=blacklisted_members,
-                               groups=groups,
-                               selected_group=group_param,
-                               search_query=search_query,
-                               active_nav='blacklist')
+            groups = load_groups_data()
+            return render_template('blacklist_public.html',
+                                   blacklisted_members=blacklisted_members,
+                                   groups=groups,
+                                   selected_group=group_param,
+                                   search_query=search_query,
+                                   active_nav='blacklist')
+        except Exception as e:
+            print(f"黑名单页面错误: {e}")
+            import traceback
+            traceback.print_exc()
+            return f"服务器内部错误: {str(e)}", 500
 
     # ================= 黑名单管理 =================
     def load_blacklist_data():
@@ -1064,8 +1090,8 @@ def create_app():
             print(f"从Supabase加载黑名单时出错: {e}")
             return None
 
-    def create_blacklist_entry(name, reason, group_type):
-        """创建黑名单成员"""
+    def create_blacklist_entry(name, reason, group_type, created_at: str | None = None):
+        """创建黑名单成员，允许指定创建时间created_at(ISO8601, e.g. 2025-10-07T13:20:00Z)"""
         if not SUPABASE_URL or not SUPABASE_KEY:
             print("Supabase配置缺失")
             return False
@@ -1087,10 +1113,24 @@ def create_app():
                 # 兼容传入 wechat/qq/qq_channel
                 group_type_map = {'wechat': 1, 'qq': 2, 'qq_channel': 3}
                 group_id = group_type_map.get(str(group_type))
+            # 处理 created_at / updated_at（无触发器，代码负责）
+            if created_at:
+                # 允许传入 datetime-local 或 ISO8601，失败则回退到当前时间
+                try:
+                    # 支持 "YYYY-MM-DDTHH:MM" 或含秒的形式
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    iso_now = dt.isoformat().replace('+00:00', 'Z')
+                except Exception:
+                    iso_now = datetime.utcnow().isoformat() + 'Z'
+            else:
+                iso_now = datetime.utcnow().isoformat() + 'Z'
+
             data = {
                 "name": name,
                 "reason": reason,
-                "group_id": group_id
+                "group_id": group_id,
+                "created_at": iso_now,
+                "updated_at": iso_now
             }
             response = requests.post(url, headers=headers, json=data)
             return response.ok
@@ -1098,8 +1138,8 @@ def create_app():
             print(f"创建黑名单失败: {e}")
             return False
 
-    def create_blacklist_from_member(member_id, reason):
-        """从现有成员创建黑名单记录（复制 name 和 group_id）"""
+    def create_blacklist_from_member(member_id, reason, created_at: str | None = None):
+        """从现有成员创建黑名单记录（复制 name 和 group_id），允许指定created_at"""
         if not SUPABASE_URL or not SUPABASE_KEY:
             print("Supabase配置缺失")
             return False
@@ -1124,10 +1164,22 @@ def create_app():
             bl_url = f"{SUPABASE_URL}/rest/v1/blacklist"
             bl_headers = dict(headers)
             bl_headers['Prefer'] = 'return=representation'
+            # 处理时间戳
+            if created_at:
+                try:
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    iso_now = dt.isoformat().replace('+00:00', 'Z')
+                except Exception:
+                    iso_now = datetime.utcnow().isoformat() + 'Z'
+            else:
+                iso_now = datetime.utcnow().isoformat() + 'Z'
+
             bl_data = {
                 "name": member.get('name'),
                 "group_id": member.get('group_id'),
-                "reason": reason
+                "reason": reason,
+                "created_at": iso_now,
+                "updated_at": iso_now
             }
             bl_resp = requests.post(bl_url, headers=bl_headers, json=bl_data)
             return bl_resp.ok
@@ -1161,9 +1213,18 @@ def create_app():
             name = request.form.get('name')
             reason = request.form.get('reason')
             group_type = request.form.get('group_type')
+            created_at = request.form.get('created_at')
+
+            # 后台表单一般来自 datetime-local，形如 YYYY-MM-DDTHH:MM
+            if created_at:
+                try:
+                    dt = datetime.fromisoformat(created_at)
+                    created_at = dt.isoformat()
+                except Exception:
+                    created_at = None
             if not name:
                 return "缺少姓名", 400
-            success = create_blacklist_entry(name, reason, group_type)
+            success = create_blacklist_entry(name, reason, group_type, created_at)
             if not success:
                 return "添加黑名单成员失败", 500
             return redirect(url_for('admin_blacklist'))
@@ -1178,9 +1239,16 @@ def create_app():
     def admin_blacklist_from_members():
         member_id = request.form.get('member_id')
         reason = request.form.get('reason')
+        created_at = request.form.get('created_at')
+        if created_at:
+            try:
+                dt = datetime.fromisoformat(created_at)
+                created_at = dt.isoformat()
+            except Exception:
+                created_at = None
         if not member_id:
             return "缺少成员ID", 400
-        success = create_blacklist_from_member(member_id, reason)
+        success = create_blacklist_from_member(member_id, reason, created_at)
         if not success:
             return "添加黑名单成员失败", 500
         return redirect(url_for('admin_blacklist'))

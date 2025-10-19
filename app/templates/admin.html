@@ -550,6 +550,10 @@
                         <label for="blacklist_reason_existing">原因:</label>
                         <textarea id="blacklist_reason_existing" name="reason" placeholder="请输入加入黑名单的原因"></textarea>
                     </div>
+                    <div class="form-group">
+                        <label for="blacklist_created_at_existing">加入时间:</label>
+                        <input type="datetime-local" id="blacklist_created_at_existing" name="created_at">
+                    </div>
                     <button type="submit" class="btn btn-primary">添加到黑名单</button>
                 </form>
                 
@@ -576,6 +580,10 @@
                                 <option value="3">QQ频道</option>
                             {% endif %}
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="blacklist_created_at">加入时间:</label>
+                        <input type="datetime-local" id="blacklist_created_at" name="created_at">
                     </div>
                     <button type="submit" class="btn btn-primary">新建并添加到黑名单</button>
                 </form>
