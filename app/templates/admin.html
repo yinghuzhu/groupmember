@@ -348,9 +348,9 @@
                                 <option value="{{ group.id }}" {% if selected_group_type == group.id|string %}selected{% endif %}>{{ group.name }}</option>
                             {% endfor %}
                         {% else %}
-                            <option value="1" {% if selected_group_type == '1' %}selected{% endif %}>微信群</option>
-                            <option value="2" {% if selected_group_type == '2' %}selected{% endif %}>QQ群</option>
-                            <option value="3" {% if selected_group_type == '3' %}selected{% endif %}>QQ频道</option>
+                            <option value="wechat" {% if selected_group_type == '1' %}selected{% endif %}>微信群</option>
+                            <option value="qq" {% if selected_group_type == '2' %}selected{% endif %}>QQ群</option>
+                            <option value="qq_channel" {% if selected_group_type == '3' %}selected{% endif %}>QQ频道</option>
                         {% endif %}
                     </select>
                     <label for="search" style="color: white;">搜索:</label>

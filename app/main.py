@@ -242,9 +242,17 @@ def create_app():
                 'qq': 2,
                 'qq_channel': 3
             }
-            group_type_int = group_type_map.get(group_type)
-            if group_type_int is not None:
-                data["group_id"] = group_type_int
+            
+            # 处理group_type，支持数字字符串和名称字符串
+            if group_type:
+                if isinstance(group_type, str) and group_type.isdigit():
+                    # 如果是数字字符串，直接转换为整数
+                    data["group_id"] = int(group_type)
+                else:
+                    # 如果是名称字符串，通过映射转换
+                    group_type_int = group_type_map.get(group_type)
+                    if group_type_int is not None:
+                        data["group_id"] = group_type_int
             
             # 发送PATCH请求更新数据
             response = requests.patch(url, headers=headers, json=data)
@@ -559,8 +567,21 @@ def create_app():
                 "created_at": now,
                 "updated_at": now,
             }
+            # 处理group_type，支持数字字符串和名称字符串
             if group_type:
-                data["group_id"] = group_type
+                if isinstance(group_type, str) and group_type.isdigit():
+                    # 如果是数字字符串，直接转换为整数
+                    data["group_id"] = int(group_type)
+                else:
+                    # 如果是名称字符串，通过映射转换
+                    group_type_map = {
+                        'wechat': 1,
+                        'qq': 2,
+                        'qq_channel': 3
+                    }
+                    group_id = group_type_map.get(group_type)
+                    if group_id is not None:
+                        data["group_id"] = group_id
             
             response = requests.post(url, headers=headers, json=data)
             return response.ok
@@ -952,7 +973,22 @@ def create_app():
                 created_at = None
         
         if name:
-            success = create_blacklist_member(name, reason, int(group_type) if group_type else None, created_at)
+            # 处理group_type，支持数字字符串和名称字符串
+            group_id = None
+            if group_type:
+                if isinstance(group_type, str) and group_type.isdigit():
+                    # 如果是数字字符串，直接转换为整数
+                    group_id = int(group_type)
+                else:
+                    # 如果是名称字符串，通过映射转换
+                    group_type_map = {
+                        'wechat': 1,
+                        'qq': 2,
+                        'qq_channel': 3
+                    }
+                    group_id = group_type_map.get(group_type)
+            
+            success = create_blacklist_member(name, reason, group_id, created_at)
             if success:
                 return redirect(url_for('admin'))
             else:
