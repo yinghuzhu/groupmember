@@ -5,6 +5,32 @@ import hashlib
 from datetime import datetime
 import pytz
 
+# 群组类型映射常量
+GROUP_ID_MAP = {
+    'wechat': 1,
+    'qq': 2,
+    'qq_channel': 3
+}
+
+def resolve_group_id(group_type_input):
+    """
+    解析群组ID，统一处理字符串、数字字符串和整数
+    :param group_type_input: 输入的群组类型（可能是 'wechat', '1', 1）
+    :return: 对应的整数ID，如果无法解析则返回None
+    """
+    if group_type_input is None:
+        return None
+        
+    if isinstance(group_type_input, int):
+        return group_type_input
+        
+    if isinstance(group_type_input, str):
+        if group_type_input.isdigit():
+            return int(group_type_input)
+        return GROUP_ID_MAP.get(group_type_input)
+        
+    return None
+
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
     # 设置session密钥
@@ -156,14 +182,12 @@ def create_app():
             params = ["order=id"]
             
             if group_type:
-                # 将字符串类型的group_type转换为整数
-                group_type_map = {
-                    'wechat': 1,
-                    'qq': 2,
-                    'qq_channel': 3
-                }
-                group_type_int = group_type_map.get(group_type, 1)  # 默认为1(微信群)
-                params.append(f"group_id=eq.{group_type_int}")
+                group_type_int = resolve_group_id(group_type)
+                if group_type_int is not None:
+                    params.append(f"group_id=eq.{group_type_int}")
+                else:
+                    # 如果提供了无法解析的group_type，默认使用1(微信群)或忽略
+                    params.append(f"group_id=eq.1")
             
             # 添加模糊搜索参数
             if search_query:
@@ -193,12 +217,7 @@ def create_app():
                 # 为旧数据添加group_type字段（向后兼容）
                 for member in members:
                     if 'group_id' not in member and group_type:
-                        group_type_map = {
-                            'wechat': 1,
-                            'qq': 2,
-                            'qq_channel': 3
-                        }
-                        member['group_id'] = group_type_map.get(group_type, 1)
+                        member['group_id'] = resolve_group_id(group_type) or 1
                 
                 return {"members": members}
             else:
@@ -236,23 +255,11 @@ def create_app():
                 "description": description
             }
             
-            # 将字符串类型的group_type转换为整数
-            group_type_map = {
-                'wechat': 1,
-                'qq': 2,
-                'qq_channel': 3
-            }
-            
-            # 处理group_type，支持数字字符串和名称字符串
+            # 处理group_type，使用统一的解析函数
             if group_type:
-                if isinstance(group_type, str) and group_type.isdigit():
-                    # 如果是数字字符串，直接转换为整数
-                    data["group_id"] = int(group_type)
-                else:
-                    # 如果是名称字符串，通过映射转换
-                    group_type_int = group_type_map.get(group_type)
-                    if group_type_int is not None:
-                        data["group_id"] = group_type_int
+                group_type_int = resolve_group_id(group_type)
+                if group_type_int is not None:
+                    data["group_id"] = group_type_int
             
             # 发送PATCH请求更新数据
             response = requests.patch(url, headers=headers, json=data)
@@ -288,7 +295,7 @@ def create_app():
                 "name": name,
                 "score": score,
                 "description": description,
-                "group_id": group_type
+                "group_id": resolve_group_id(group_type)
             }
             
             # 发送POST请求创建数据
@@ -569,19 +576,9 @@ def create_app():
             }
             # 处理group_type，支持数字字符串和名称字符串
             if group_type:
-                if isinstance(group_type, str) and group_type.isdigit():
-                    # 如果是数字字符串，直接转换为整数
-                    data["group_id"] = int(group_type)
-                else:
-                    # 如果是名称字符串，通过映射转换
-                    group_type_map = {
-                        'wechat': 1,
-                        'qq': 2,
-                        'qq_channel': 3
-                    }
-                    group_id = group_type_map.get(group_type)
-                    if group_id is not None:
-                        data["group_id"] = group_id
+                group_id = resolve_group_id(group_type)
+                if group_id is not None:
+                    data["group_id"] = group_id
             
             response = requests.post(url, headers=headers, json=data)
             return response.ok
@@ -798,12 +795,7 @@ def create_app():
         
         # 根据群组类型过滤数据
         if group_type:
-            group_type_map = {
-                'wechat': 1,
-                'qq': 2,
-                'qq_channel': 3
-            }
-            group_type_int = group_type_map.get(group_type)
+            group_type_int = resolve_group_id(group_type)
             if group_type_int:
                 filtered_members = [member for member in data['members'] 
                                   if member.get('group_id') == group_type_int]
