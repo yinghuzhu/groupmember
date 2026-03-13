@@ -322,17 +322,23 @@
         <div class="header">
             <h1>群成员管理后台</h1>
             <div class="user-info">
-                <span>管理员: {{ session.admin_username }}</span>
+                <span>管理员：{{ session.admin_username }}</span>
+                {% if is_super_admin %}
+                <button onclick="showCreateAdminModal()" class="change-password-btn" style="margin-right: 10px;">新增管理员</button>
+                {% endif %}
                 <a href="/admin/change-password" class="change-password-btn">修改密码</a>
                 <a href="/admin/logout" class="logout-btn">登出</a>
             </div>
         </div>
         
-        <!-- Tab导航栏 -->
+        <!-- Tab 导航栏 -->
         <div class="tab-container">
             <button class="tab-button active" onclick="openTab(event, 'members')">成员管理</button>
             <button class="tab-button" onclick="openTab(event, 'group-info')">群信息管理</button>
             <button class="tab-button" onclick="openTab(event, 'blacklist')">黑名单管理</button>
+            {% if is_super_admin %}
+            <button class="tab-button" onclick="openTab(event, 'admin-management')" style="background-color: #28a745; color: white;">管理员管理</button>
+            {% endif %}
         </div>
         
         <!-- 成员管理 Tab -->
@@ -642,6 +648,61 @@
                 </table>
             </div>
         </div>
+        
+        <!-- 管理员管理 Tab (仅超级管理员可见) -->
+        <div id="admin-management" class="tab-content">
+            <div class="management-section">
+                <h2>管理员列表</h2>
+                <p style="color: #666; margin-bottom: 15px;">管理所有管理员账号，可以修改用户名、重置密码、删除管理员</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>超级管理员</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if admin_users %}
+                            {% for admin in admin_users %}
+                            <tr>
+                                <td>{{ admin.id }}</td>
+                                <td>
+                                    <form action="/admin/update-admin-username" method="post" style="display: inline;">
+                                        <input type="hidden" name="admin_id" value="{{ admin.id }}">
+                                        <input type="text" name="username" value="{{ admin.username }}" required style="width: 150px; padding: 5px;">
+                                        <button type="submit" class="btn btn-primary" style="padding: 5px 10px;">更新</button>
+                                    </form>
+                                </td>
+                                <td>
+                                    {% if admin.is_super_admin %}
+                                        <span style="color: #28a745; font-weight: bold;">✓ 是</span>
+                                    {% else %}
+                                        <span style="color: #6c757d;">✗ 否</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button onclick="showResetPasswordModal('{{ admin.id }}', '{{ admin.username }}')" class="btn btn-primary" style="padding: 5px 10px;">重置密码</button>
+                                    {% if admin.id != current_admin_id %}
+                                    <form action="/admin/delete-admin/{{ admin.id }}" method="post" style="display: inline;" onsubmit="return confirm('确定要删除管理员 {{ admin.username }} 吗？')">
+                                        <button type="submit" class="btn btn-danger" style="padding: 5px 10px;">删除</button>
+                                    </form>
+                                    {% else %}
+                                    <span style="color: #6c757d; font-size: 12px;">（当前账号）</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4">暂无管理员数据</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -792,6 +853,95 @@
             // 自动加载第一个群组的公告
             loadGroupNotice();
         });
+        
+        // 显示创建管理员模态框
+        function showCreateAdminModal() {
+            const modal = document.getElementById('createAdminModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+        
+        // 关闭创建管理员模态框
+        function closeCreateAdminModal() {
+            const modal = document.getElementById('createAdminModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // 显示重置密码模态框
+        function showResetPasswordModal(adminId, username) {
+            const modal = document.getElementById('resetPasswordModal');
+            if (modal) {
+                document.getElementById('reset_password_admin_id').value = adminId;
+                document.getElementById('reset_password_username').textContent = username;
+                modal.style.display = 'block';
+            }
+        }
+        
+        // 关闭重置密码模态框
+        function closeResetPasswordModal() {
+            const modal = document.getElementById('resetPasswordModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
     </script>
-</body>
-</html>
+    
+    <!-- 创建管理员模态框 -->
+    <div id="createAdminModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 450px; border-radius: 8px;">
+            <h2 style="margin-bottom: 20px; color: #212529;">创建新管理员</h2>
+            {% if error %}
+            <div style="color: #dc3545; margin-bottom: 15px; padding: 10px; background-color: #f8d7da; border-radius: 4px;">{{ error }}</div>
+            {% endif %}
+            <form action="/admin/create-admin" method="post">
+                <div class="form-group">
+                    <label for="admin_username" style="display: block; margin-bottom: 5px; font-weight: bold; color: #212529;">用户名:</label>
+                    <input type="text" id="admin_username" name="username" required placeholder="请输入用户名（至少 3 位）" style="background-color: white; width: 100%; padding: 8px; border: 1px solid #87CEEB; border-radius: 4px; color: #212529; font-size: 14px;">
+                </div>
+                <div class="form-group">
+                    <label for="admin_password" style="display: block; margin-bottom: 5px; font-weight: bold; color: #212529;">密码:</label>
+                    <input type="password" id="admin_password" name="password" required minlength="6" placeholder="请输入密码（至少 6 位）" style="background-color: white; width: 100%; padding: 8px; border: 1px solid #87CEEB; border-radius: 4px; color: #212529; font-size: 14px;">
+                </div>
+                <div class="form-group">
+                    <label for="admin_confirm_password" style="display: block; margin-bottom: 5px; font-weight: bold; color: #212529;">确认密码:</label>
+                    <input type="password" id="admin_confirm_password" name="confirm_password" required minlength="6" placeholder="请再次输入密码" style="background-color: white; width: 100%; padding: 8px; border: 1px solid #87CEEB; border-radius: 4px; color: #212529; font-size: 14px;">
+                </div>
+                <div class="form-group" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                    <label style="display: flex; align-items: center; cursor: pointer; color: #212529;">
+                        <input type="checkbox" name="is_super_admin" id="is_super_admin" style="width: auto; margin-right: 10px;">
+                        <span><strong>设为超级管理员</strong>（拥有所有权限，可管理其他管理员）</span>
+                    </label>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" onclick="closeCreateAdminModal()" class="btn" style="background-color: #6c757d; color: white;">取消</button>
+                    <button type="submit" class="btn btn-primary">创建管理员</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 重置管理员密码模态框 -->
+    <div id="resetPasswordModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 400px; border-radius: 8px;">
+            <h2 style="margin-bottom: 20px; color: #212529;">重置管理员密码</h2>
+            <p style="color: #666; margin-bottom: 15px;">管理员：<strong id="reset_password_username" style="color: #212529;"></strong></p>
+            <form action="/admin/reset-admin-password" method="post">
+                <input type="hidden" id="reset_password_admin_id" name="admin_id">
+                <div class="form-group">
+                    <label for="reset_new_password" style="display: block; margin-bottom: 5px; font-weight: bold; color: #212529;">新密码:</label>
+                    <input type="password" id="reset_new_password" name="new_password" required minlength="6" placeholder="请输入新密码（至少 6 位）" style="background-color: white; width: 100%; padding: 8px; border: 1px solid #87CEEB; border-radius: 4px; color: #212529; font-size: 14px;">
+                </div>
+                <div class="form-group">
+                    <label for="reset_confirm_password" style="display: block; margin-bottom: 5px; font-weight: bold; color: #212529;">确认新密码:</label>
+                    <input type="password" id="reset_confirm_password" name="confirm_password" required minlength="6" placeholder="请再次输入新密码" style="background-color: white; width: 100%; padding: 8px; border: 1px solid #87CEEB; border-radius: 4px; color: #212529; font-size: 14px;">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" onclick="closeResetPasswordModal()" class="btn" style="background-color: #6c757d; color: white;">取消</button>
+                    <button type="submit" class="btn btn-primary">重置密码</button>
+                </div>
+            </form>
+        </div>
+    </div>

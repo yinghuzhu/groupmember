@@ -88,7 +88,7 @@ def create_app():
                 'Authorization': f"Bearer {SUPABASE_KEY}",
                 'Content-Type': 'application/json'
             }
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, verify=False)
             if response.ok:
                 notices = response.json()
                 return notices[0] if notices else None
@@ -111,7 +111,7 @@ def create_app():
                 'Authorization': f"Bearer {SUPABASE_KEY}",
                 'Content-Type': 'application/json'
             }
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, verify=False)
             if response.ok:
                 groups = response.json()
                 return groups
@@ -148,7 +148,7 @@ def create_app():
                 }
                 if author:
                     data["author"] = author
-                response = requests.patch(url, headers=headers, json=data)
+                response = requests.patch(url, headers=headers, json=data, verify=False)
             else:
                 # 创建
                 url = f"{SUPABASE_URL}/rest/v1/group_notices"
@@ -160,7 +160,7 @@ def create_app():
                 }
                 if author:
                     data["author"] = author
-                response = requests.post(url, headers=headers, json=data)
+                response = requests.post(url, headers=headers, json=data, verify=False)
             return response.ok
         except Exception as e:
             print(f"更新群公告时出错: {e}")
@@ -206,7 +206,7 @@ def create_app():
             }
             
             # 发送GET请求获取数据
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, verify=False)
             print(f"响应状态码: {response.status_code}")  # 调试信息
             print(f"响应内容: {response.text}")  # 调试信息
             
@@ -262,7 +262,7 @@ def create_app():
                     data["group_id"] = group_type_int
             
             # 发送PATCH请求更新数据
-            response = requests.patch(url, headers=headers, json=data)
+            response = requests.patch(url, headers=headers, json=data, verify=False)
             
             if response.ok:
                 return True
@@ -299,7 +299,7 @@ def create_app():
             }
             
             # 发送POST请求创建数据
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=data, verify=False)
             
             if response.ok:
                 return True
@@ -327,7 +327,7 @@ def create_app():
             }
             
             # 发送DELETE请求删除数据
-            response = requests.delete(url, headers=headers)
+            response = requests.delete(url, headers=headers, verify=False)
             
             if response.ok:
                 return True
@@ -361,7 +361,7 @@ def create_app():
             }
             
             # 发送PATCH请求更新数据
-            response = requests.patch(url, headers=headers, json=data)
+            response = requests.patch(url, headers=headers, json=data, verify=False)
             
             if response.ok:
                 return True
@@ -391,7 +391,7 @@ def create_app():
                 'Content-Type': 'application/json'
             }
             
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, verify=False)
             
             if response.ok:
                 users = response.json()
@@ -407,13 +407,13 @@ def create_app():
     def get_admin_user(username, password):
         """获取管理员用户信息（用于验证密码）"""
         if not SUPABASE_URL or not SUPABASE_KEY:
-            print("Supabase配置缺失")
+            print("Supabase 配置缺失")
             return None
-            
+                
         try:
             # 对密码进行哈希处理
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
-            
+                
             # 查询用户
             url = f"{SUPABASE_URL}/rest/v1/admin_users?username=eq.{username}"
             headers = {
@@ -421,20 +421,50 @@ def create_app():
                 'Authorization': f"Bearer {SUPABASE_KEY}",
                 'Content-Type': 'application/json'
             }
-            
-            response = requests.get(url, headers=headers)
-            
+                
+            response = requests.get(url, headers=headers, verify=False)
+                
             if response.ok:
                 users = response.json()
                 if len(users) > 0:
                     return users[0]
                 return None
             else:
-                print(f"获取用户信息失败: {response.text}")
+                print(f"获取用户信息失败：{response.text}")
                 return None
-                
+                    
         except Exception as e:
-            print(f"获取管理员用户信息时出错: {e}")
+            print(f"获取管理员用户信息时出错：{e}")
+            return None
+    
+    def get_current_admin_user(username):
+        """获取当前管理员用户信息（不验证密码，只获取信息）"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase 配置缺失")
+            return None
+                
+        try:
+            # 查询用户
+            url = f"{SUPABASE_URL}/rest/v1/admin_users?username=eq.{username}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+                
+            response = requests.get(url, headers=headers, verify=False)
+                
+            if response.ok:
+                users = response.json()
+                if len(users) > 0:
+                    return users[0]
+                return None
+            else:
+                print(f"获取用户信息失败：{response.text}")
+                return None
+                    
+        except Exception as e:
+            print(f"获取管理员用户信息时出错：{e}")
             return None
 
     def update_admin_password(username, old_password, new_password):
@@ -467,7 +497,7 @@ def create_app():
             }
             
             # 发送PATCH请求更新密码
-            response = requests.patch(url, headers=headers, json=data)
+            response = requests.patch(url, headers=headers, json=data, verify=False)
             
             if response.ok:
                 return True
@@ -479,17 +509,19 @@ def create_app():
             print(f"更新管理员密码时出错: {e}")
             return False
 
-    def create_admin_user(username, password):
-        """创建管理员用户"""
+    def create_admin_user(username, password, is_super_admin=False):
+        """创建管理员用户
+        :param is_super_admin: 是否为超级管理员（拥有所有权限）
+        """
         if not SUPABASE_URL or not SUPABASE_KEY:
-            print("Supabase配置缺失")
+            print("Supabase 配置缺失")
             return False
             
         try:
             # 对密码进行哈希处理
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
             
-            # 构建请求URL
+            # 构建请求 URL
             url = f"{SUPABASE_URL}/rest/v1/admin_users"
             headers = {
                 'apikey': SUPABASE_KEY,
@@ -501,21 +533,49 @@ def create_app():
             # 构造要创建的数据
             data = {
                 "username": username,
-                "password": hashed_password
+                "password": hashed_password,
+                "is_super_admin": is_super_admin  # 添加超级管理员字段
             }
             
-            # 发送POST请求创建数据
-            response = requests.post(url, headers=headers, json=data)
+            # 发送 POST 请求创建数据
+            response = requests.post(url, headers=headers, json=data, verify=False)
             
             if response.ok:
                 return True
             else:
-                print(f"创建管理员用户失败: {response.text}")
+                print(f"创建管理员用户失败：{response.text}")
                 return False
                 
         except Exception as e:
-            print(f"创建管理员用户时出错: {e}")
+            print(f"创建管理员用户时出错：{e}")
             return False
+
+    def load_all_admins_data():
+        """加载所有管理员用户数据"""
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("Supabase 配置缺失")
+            return None
+            
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/admin_users?order=id"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.get(url, headers=headers, verify=False)
+            
+            if response.ok:
+                admins = response.json()
+                return admins
+            else:
+                print(f"获取管理员列表失败：{response.text}")
+                return None
+                
+        except Exception as e:
+            print(f"获取管理员列表时出错：{e}")
+            return None
 
     def load_blacklist_data():
         """从Supabase加载黑名单数据"""
@@ -529,7 +589,7 @@ def create_app():
                 'Authorization': f"Bearer {SUPABASE_KEY}",
                 'Content-Type': 'application/json'
             }
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, verify=False)
             if response.ok:
                 blacklist = response.json()
                 return blacklist
@@ -580,7 +640,7 @@ def create_app():
                 if group_id is not None:
                     data["group_id"] = group_id
             
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=data, verify=False)
             return response.ok
         except Exception as e:
             print(f"创建黑名单成员时出错: {e}")
@@ -598,7 +658,7 @@ def create_app():
                 'Authorization': f"Bearer {SUPABASE_KEY}",
                 'Content-Type': 'application/json'
             }
-            response = requests.delete(url, headers=headers)
+            response = requests.delete(url, headers=headers, verify=False)
             return response.ok
         except Exception as e:
             print(f"删除黑名单成员时出错: {e}")
@@ -623,7 +683,7 @@ def create_app():
                 "reason": reason,
                 "updated_at": now,
             }
-            response = requests.patch(url, headers=headers, json=data)
+            response = requests.patch(url, headers=headers, json=data, verify=False)
             return response.ok
         except Exception as e:
             print(f"更新黑名单成员时出错: {e}")
@@ -780,19 +840,24 @@ def create_app():
         # 获取查询参数中的群组类型和搜索关键词
         group_type = request.args.get('group_type')
         search_query = request.args.get('search')
-        
+            
+        # 获取当前用户信息，判断是否为超级管理员
+        current_username = session.get('admin_username')
+        current_user = get_current_admin_user(current_username)
+        is_super_admin = current_user.get('is_super_admin') if current_user else False
+            
         # 加载群组数据
         groups = load_groups_data()
-        
+            
         # 加载黑名单数据
         blacklisted_members = load_blacklist_data()
-        
+            
         # 如果有指定群组类型或搜索关键词，则按条件加载数据
         data = load_member_data(group_type, search_query)
-            
+                
         if data is None:
-            return "无法从Supabase加载数据", 500
-        
+            return "无法从 Supabase 加载数据", 500
+            
         # 根据群组类型过滤数据
         if group_type:
             group_type_int = resolve_group_id(group_type)
@@ -800,10 +865,20 @@ def create_app():
                 filtered_members = [member for member in data['members'] 
                                   if member.get('group_id') == group_type_int]
                 data['members'] = filtered_members
+            
+        # 加载所有管理员数据（仅超级管理员需要）
+        admin_users = None
+        if is_super_admin:
+            admin_users = load_all_admins_data()
         
+        # 获取当前管理员 ID
+        current_admin_id = current_user.get('id') if current_user else None
+            
         return render_template('admin.html', members=data['members'], groups=groups,
                              selected_group_type=group_type, search_query=search_query,
-                             blacklisted_members=blacklisted_members)
+                             blacklisted_members=blacklisted_members, 
+                             is_super_admin=is_super_admin, admin_users=admin_users,
+                             current_admin_id=current_admin_id)
 
     @app.route('/admin/change-password', methods=['GET', 'POST'])
     @login_required
@@ -831,25 +906,178 @@ def create_app():
         
         return render_template('change_password.html')
 
+    @app.route('/admin/create-admin', methods=['GET', 'POST'])
+    @login_required
+    def admin_create_admin_user():
+        """创建新的管理员账号（仅超级管理员可访问）"""
+        # 验证当前用户是否为超级管理员
+        current_username = session.get('admin_username')
+        current_user = get_current_admin_user(current_username)
+        
+        if not current_user or not current_user.get('is_super_admin'):
+            return jsonify({'success': False, 'message': '权限不足，仅超级管理员可创建新管理员'}), 403
+        
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            is_super_admin = request.form.get('is_super_admin') == 'on'  # 获取是否超级管理员
+            
+            if not username or not password or not confirm_password:
+                return redirect(url_for('admin'))
+            
+            if password != confirm_password:
+                return redirect(url_for('admin'))
+            
+            if len(password) < 6:
+                return redirect(url_for('admin'))
+            
+            # 检查用户名是否已存在
+            existing_user = get_admin_user(username, '')
+            if existing_user:
+                return redirect(url_for('admin'))
+            
+            if create_admin_user(username, password, is_super_admin):
+                return redirect(url_for('admin'))
+            else:
+                return redirect(url_for('admin'))
+        
+        return redirect(url_for('admin'))
+    
     @app.route('/admin/update-group-name', methods=['POST'])
     @login_required
     def update_group_name():
         """更新群组名称"""
-        # 处理JSON数据
+        # 处理 JSON 数据
         data = request.get_json()
         group_id = data.get('group_id') if data else None
         name = data.get('name') if data else None
-        
+            
         if not group_id or not name:
             return jsonify({'success': False, 'message': '缺少必要参数'})
-        
+            
         # 更新群组名称
         success = update_group_name_data(group_id, name)
-        
+            
         if success:
             return jsonify({'success': True, 'message': '群组名称更新成功'})
         else:
             return jsonify({'success': False, 'message': '群组名称更新失败'})
+    
+    @app.route('/admin/update-admin-username', methods=['POST'])
+    @login_required
+    def update_admin_username():
+        """更新管理员用户名（仅超级管理员可访问）"""
+        # 验证当前用户是否为超级管理员
+        current_username = session.get('admin_username')
+        current_user = get_current_admin_user(current_username)
+            
+        if not current_user or not current_user.get('is_super_admin'):
+            return jsonify({'success': False, 'message': '权限不足'}), 403
+            
+        admin_id = request.form.get('admin_id')
+        new_username = request.form.get('username')
+            
+        if not admin_id or not new_username:
+            return redirect(url_for('admin'))
+            
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/admin_users?id=eq.{admin_id}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            data = {"username": new_username}
+            response = requests.patch(url, headers=headers, json=data, verify=False)
+                
+            if response.ok:
+                return redirect(url_for('admin'))
+            else:
+                print(f"更新用户名失败：{response.text}")
+                return redirect(url_for('admin'))
+        except Exception as e:
+            print(f"更新管理员用户名时出错：{e}")
+            return redirect(url_for('admin'))
+    
+    @app.route('/admin/reset-admin-password', methods=['POST'])
+    @login_required
+    def reset_admin_password():
+        """重置管理员密码（仅超级管理员可访问）"""
+        # 验证当前用户是否为超级管理员
+        current_username = session.get('admin_username')
+        current_user = get_current_admin_user(current_username)
+            
+        if not current_user or not current_user.get('is_super_admin'):
+            return jsonify({'success': False, 'message': '权限不足'}), 403
+            
+        admin_id = request.form.get('admin_id')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+            
+        if not admin_id or not new_password or not confirm_password:
+            return redirect(url_for('admin'))
+            
+        if new_password != confirm_password:
+            return redirect(url_for('admin'))
+            
+        if len(new_password) < 6:
+            return redirect(url_for('admin'))
+            
+        try:
+            hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
+            url = f"{SUPABASE_URL}/rest/v1/admin_users?id=eq.{admin_id}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            data = {"password": hashed_password}
+            response = requests.patch(url, headers=headers, json=data, verify=False)
+                
+            if response.ok:
+                return redirect(url_for('admin'))
+            else:
+                print(f"重置密码失败：{response.text}")
+                return redirect(url_for('admin'))
+        except Exception as e:
+            print(f"重置管理员密码时出错：{e}")
+            return redirect(url_for('admin'))
+    
+    @app.route('/admin/delete-admin/<int:admin_id>', methods=['POST'])
+    @login_required
+    def delete_admin(admin_id):
+        """删除管理员账号（仅超级管理员可访问）"""
+        # 验证当前用户是否为超级管理员
+        current_username = session.get('admin_username')
+        current_user = get_current_admin_user(current_username)
+            
+        if not current_user or not current_user.get('is_super_admin'):
+            return jsonify({'success': False, 'message': '权限不足'}), 403
+            
+        # 不能删除自己
+        if str(admin_id) == str(current_user.get('id')):
+            return redirect(url_for('admin'))
+            
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/admin_users?id=eq.{admin_id}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            response = requests.delete(url, headers=headers, verify=False)
+                
+            if response.ok:
+                return redirect(url_for('admin'))
+            else:
+                print(f"删除管理员失败：{response.text}")
+                return redirect(url_for('admin'))
+        except Exception as e:
+            print(f"删除管理员时出错：{e}")
+            return redirect(url_for('admin'))
 
     @app.route('/admin/create', methods=['POST'])
     @login_required
@@ -1108,7 +1336,7 @@ def create_app():
                 'Authorization': f"Bearer {SUPABASE_KEY}",
                 'Content-Type': 'application/json'
             }
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, verify=False)
             if response.ok:
                 return response.json()
             else:
@@ -1160,7 +1388,7 @@ def create_app():
                 "created_at": iso_now,
                 "updated_at": iso_now
             }
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=data, verify=False)
             return response.ok
         except Exception as e:
             print(f"创建黑名单失败: {e}")
