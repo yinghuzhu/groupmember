@@ -1724,7 +1724,9 @@ def create_app():
                 import csv
                 import io
                 
+                # 添加 UTF-8 BOM 标记，让 Excel 能正确识别编码
                 output = io.StringIO()
+                output.write('\ufeff')  # UTF-8 BOM
                 writer = csv.writer(output)
                 writer.writerow(['时间', '操作人', '操作类型', '目标表', '目标名称', '操作描述', 'IP 地址'])
                 
@@ -1740,7 +1742,7 @@ def create_app():
                     ])
                 
                 response = make_response(output.getvalue())
-                response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+                response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
                 response.headers['Content-Disposition'] = 'attachment; filename=operation_logs.csv'
                 return response
             
