@@ -338,6 +338,9 @@
             <button class="tab-button" onclick="openTab(event, 'blacklist')">黑名单管理</button>
             {% if is_super_admin %}
             <button class="tab-button" onclick="openTab(event, 'admin-management')" style="background-color: #28a745; color: white;">管理员管理</button>
+            <button class="tab-button" onclick="openTab(event, 'operation-logs')" style="background-color: #17a2b8; color: white;">操作日志</button>
+            {% else %}
+            <button class="tab-button" onclick="openTab(event, 'operation-logs')" style="background-color: #17a2b8; color: white;">操作日志</button>
             {% endif %}
         </div>
         
@@ -703,6 +706,46 @@
                 </table>
             </div>
         </div>
+        
+        <!-- 操作日志 Tab -->
+        <div id="operation-logs" class="tab-content">
+            <div class="management-section">
+                <h2>操作日志</h2>
+                <p style="color: #666; margin-bottom: 15px;">查看所有管理员的操作记录，包括登录、成员管理、黑名单管理等操作</p>
+                
+                <!-- 筛选表单 -->
+                <div class="filter-form" style="margin-bottom: 20px;">
+                    <form id="logsFilterForm">
+                        <label for="log_operator" style="color: white;">操作人:</label>
+                        <input type="text" id="log_operator" placeholder="用户名" style="width: 120px;">
+                        
+                        <label for="log_operation_type" style="color: white;">操作类型:</label>
+                        <select id="log_operation_type" style="width: 150px;">
+                            <option value="">全部</option>
+                            <option value="login_success">登录成功</option>
+                            <option value="login_failed">登录失败</option>
+                            <option value="logout">退出登录</option>
+                            <option value="add_member">添加成员</option>
+                            <option value="update_member">更新成员</option>
+                            <option value="delete_member">删除成员</option>
+                            <option value="add_blacklist">添加黑名单</option>
+                            <option value="delete_blacklist">删除黑名单</option>
+                        </select>
+                        
+                        <label for="log_search" style="color: white;">搜索:</label>
+                        <input type="text" id="log_search" placeholder="目标名称或描述" style="width: 150px;">
+                        
+                        <button type="button" onclick="loadOperationLogs()" class="btn btn-primary">查询</button>
+                        <button type="button" onclick="exportLogs()" class="btn btn-success">导出 CSV</button>
+                    </form>
+                </div>
+                
+                <!-- 日志列表 -->
+                <div id="logsContainer">
+                    <div class="loading">正在加载日志...</div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -886,6 +929,98 @@
             if (modal) {
                 modal.style.display = 'none';
             }
+        }
+        
+        // 加载操作日志
+        function loadOperationLogs() {
+            const operator = document.getElementById('log_operator').value;
+            const operationType = document.getElementById('log_operation_type').value;
+            const search = document.getElementById('log_search').value;
+            const container = document.getElementById('logsContainer');
+            
+            container.innerHTML = '<div class="loading">正在加载日志...</div>';
+            
+            // 构建查询参数
+            const params = new URLSearchParams();
+            if (operator) params.append('operator', operator);
+            if (operationType) params.append('operation_type', operationType);
+            if (search) params.append('search', search);
+            
+            fetch(`/admin/api/operation-logs?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.logs && data.logs.length > 0) {
+                        let html = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>时间</th>
+                                        <th>操作人</th>
+                                        <th>操作类型</th>
+                                        <th>目标表</th>
+                                        <th>目标名称</th>
+                                        <th>操作描述</th>
+                                        <th>IP 地址</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        data.logs.forEach(log => {
+                            html += `
+                                <tr>
+                                    <td>${log.created_at || ''}</td>
+                                    <td>${log.operator_username || ''}</td>
+                                    <td>${getOperationTypeText(log.operation_type) || ''}</td>
+                                    <td>${log.target_table || ''}</td>
+                                    <td>${log.target_name || ''}</td>
+                                    <td>${log.action_details || ''}</td>
+                                    <td>${log.ip_address || ''}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += '</tbody></table>';
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<div class="loading">暂无日志记录</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    container.innerHTML = '<div class="error">加载日志失败，请稍后重试</div>';
+                });
+        }
+        
+        // 获取操作类型的中文描述
+        function getOperationTypeText(type) {
+            const typeMap = {
+                'login_success': '登录成功',
+                'login_failed': '登录失败',
+                'logout': '退出登录',
+                'add_member': '添加成员',
+                'update_member': '更新成员',
+                'delete_member': '删除成员',
+                'add_blacklist': '添加黑名单',
+                'delete_blacklist': '删除黑名单'
+            };
+            return typeMap[type] || type;
+        }
+        
+        // 导出日志为 CSV
+        function exportLogs() {
+            const operator = document.getElementById('log_operator').value;
+            const operationType = document.getElementById('log_operation_type').value;
+            const search = document.getElementById('log_search').value;
+            
+            // 构建查询参数
+            const params = new URLSearchParams();
+            if (operator) params.append('operator', operator);
+            if (operationType) params.append('operation_type', operationType);
+            if (search) params.append('search', search);
+            params.append('export', 'csv');
+            
+            window.location.href = `/admin/api/operation-logs?${params.toString()}`;
         }
     </script>
     

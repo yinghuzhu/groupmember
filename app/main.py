@@ -4,6 +4,7 @@ import requests
 import hashlib
 from datetime import datetime
 import pytz
+from app.logger import log_operation
 
 # 群组类型映射常量
 GROUP_ID_MAP = {
@@ -820,8 +821,25 @@ def create_app():
             if username and password and verify_admin_user(username, password):
                 session['admin_logged_in'] = True
                 session['admin_username'] = username
+                
+                # 记录登录成功日志
+                log_operation(
+                    operation_type='login_success',
+                    target_table='admin_users',
+                    target_name=username,
+                    action_details=f'管理员 {username} 登录成功'
+                )
+                
                 return redirect(url_for('admin'))
             else:
+                # 记录登录失败日志
+                if username:
+                    log_operation(
+                        operation_type='login_failed',
+                        target_table='admin_users',
+                        target_name=username,
+                        action_details=f'管理员登录失败：用户名 {username}'
+                    )
                 return render_template('login.html', error='用户名或密码错误')
         
         return render_template('login.html')
@@ -829,6 +847,14 @@ def create_app():
     @app.route('/admin/logout')
     def admin_logout():
         """管理员登出"""
+        username = session.get('admin_username')
+        if username:
+            log_operation(
+                operation_type='logout',
+                target_table='admin_users',
+                target_name=username,
+                action_details=f'管理员 {username} 退出登录'
+            )
         session.pop('admin_logged_in', None)
         session.pop('admin_username', None)
         return redirect(url_for('admin_login'))
@@ -1087,12 +1113,12 @@ def create_app():
         score = request.form.get('score')
         description = request.form.get('description')
         group_type = request.form.get('group_type')
-        
+            
         # 获取当前筛选的群组类型和搜索关键词，用于重定向
         current_group_type = request.args.get('group_type')
         search_query = request.args.get('search')
-        
-        # 即使group_type为空也允许创建
+            
+        # 即使 group_type 为空也允许创建
         if name and score:
             success = create_member(name, int(score), description, group_type)
             if success:
@@ -1102,7 +1128,16 @@ def create_app():
                     redirect_params.append(f"group_type={current_group_type}")
                 if search_query:
                     redirect_params.append(f"search={search_query}")
-                
+                    
+                # 记录添加成员日志
+                log_operation(
+                    operation_type='add_member',
+                    target_table='members',
+                    target_name=name,
+                    action_details=f'添加新成员：{name}，积分：{score}，群组：{group_type}',
+                    new_value={'name': name, 'score': int(score), 'description': description, 'group_id': resolve_group_id(group_type)}
+                )
+                    
                 if redirect_params:
                     return redirect(url_for('admin') + '?' + '&'.join(redirect_params))
                 else:
@@ -1127,6 +1162,12 @@ def create_app():
         search_query = request.args.get('search')
         
         if member_id and name and score and group_type:
+            # 先获取旧数据用于日志记录
+            old_data = load_member_data()
+            old_member = None
+            if old_data and 'members' in old_data:
+                old_member = next((m for m in old_data['members'] if m['id'] == int(member_id)), None)
+            
             success = update_member_data(member_id, name, int(score), description, group_type)
             if success:
                 # 根据当前筛选的群组类型和搜索关键词进行重定向
@@ -1135,6 +1176,28 @@ def create_app():
                     redirect_params.append(f"group_type={current_group_type}")
                 if search_query:
                     redirect_params.append(f"search={search_query}")
+                
+                # 记录更新成员日志
+                if old_member:
+                    changes = []
+                    if old_member.get('name') != name:
+                        changes.append(f"姓名：{old_member.get('name')} → {name}")
+                    if str(old_member.get('score')) != str(score):
+                        changes.append(f"积分：{old_member.get('score')} → {score}")
+                    if old_member.get('description') != description:
+                        changes.append(f"描述变化")
+                    if str(old_member.get('group_id')) != str(resolve_group_id(group_type)):
+                        changes.append(f"群组：{old_member.get('group_id')} → {resolve_group_id(group_type)}")
+                    
+                    log_operation(
+                        operation_type='update_member',
+                        target_table='members',
+                        target_id=int(member_id),
+                        target_name=name,
+                        action_details=f'更新成员信息：{name}，变更内容：{"; ".join(changes)}',
+                        old_value={'name': old_member.get('name'), 'score': old_member.get('score'), 'description': old_member.get('description'), 'group_id': old_member.get('group_id')},
+                        new_value={'name': name, 'score': int(score), 'description': description, 'group_id': resolve_group_id(group_type)}
+                    )
                 
                 if redirect_params:
                     return redirect(url_for('admin') + '?' + '&'.join(redirect_params))
@@ -1150,6 +1213,12 @@ def create_app():
     def admin_delete(member_id):
         """处理删除成员的请求"""
         if member_id:
+            # 先获取旧数据用于日志记录
+            old_data = load_member_data()
+            old_member = None
+            if old_data and 'members' in old_data:
+                old_member = next((m for m in old_data['members'] if m['id'] == int(member_id)), None)
+            
             # 获取当前筛选的群组类型和搜索关键词，用于重定向
             current_group_type = request.args.get('group_type')
             search_query = request.args.get('search')
@@ -1162,6 +1231,17 @@ def create_app():
                     redirect_params.append(f"group_type={current_group_type}")
                 if search_query:
                     redirect_params.append(f"search={search_query}")
+                
+                # 记录删除成员日志
+                if old_member:
+                    log_operation(
+                        operation_type='delete_member',
+                        target_table='members',
+                        target_id=member_id,
+                        target_name=old_member.get('name'),
+                        action_details=f'删除成员：{old_member.get("name")}（原群组 ID: {old_member.get("group_id")}，积分：{old_member.get("score")}）',
+                        old_value={'name': old_member.get('name'), 'score': old_member.get('score'), 'description': old_member.get('description'), 'group_id': old_member.get('group_id')}
+                    )
                 
                 if redirect_params:
                     return redirect(url_for('admin') + '?' + '&'.join(redirect_params))
@@ -1480,9 +1560,20 @@ def create_app():
                     created_at = None
             if not name:
                 return "缺少姓名", 400
+            
             success = create_blacklist_entry(name, reason, group_type, created_at)
             if not success:
                 return "添加黑名单成员失败", 500
+            
+            # 记录添加黑名单日志
+            log_operation(
+                operation_type='add_blacklist',
+                target_table='blacklist',
+                target_name=name,
+                action_details=f'添加黑名单成员：{name}，原因：{reason}',
+                new_value={'name': name, 'reason': reason, 'group_id': resolve_group_id(group_type)}
+            )
+            
             return redirect(url_for('admin_blacklist'))
 
         # GET 渲染
@@ -1503,10 +1594,28 @@ def create_app():
             except Exception:
                 created_at = None
         if not member_id:
-            return "缺少成员ID", 400
+            return "缺少成员 ID", 400
+            
+        # 先获取成员信息用于日志
+        member_data = load_member_data()
+        member = None
+        if member_data and 'members' in member_data:
+            member = next((m for m in member_data['members'] if m['id'] == int(member_id)), None)
+            
         success = create_blacklist_from_member(member_id, reason, created_at)
         if not success:
             return "添加黑名单成员失败", 500
+            
+        # 记录添加黑名单日志
+        if member:
+            log_operation(
+                operation_type='add_blacklist',
+                target_table='blacklist',
+                target_name=member.get('name'),
+                action_details=f'从成员添加黑名单：{member.get("name")}，原因：{reason}',
+                new_value={'name': member.get('name'), 'group_id': member.get('group_id'), 'reason': reason}
+            )
+            
         return redirect(url_for('admin_blacklist'))
 
     @app.route('/admin/blacklist/<int:entry_id>', methods=['POST'])
@@ -1515,14 +1624,146 @@ def create_app():
         """从表单提交中删除（method override 可选）"""
         # 兼容 _method=DELETE
         if request.form.get('_method', '').upper() in ('DELETE',):
+            # 先获取旧数据用于日志
+            old_data = load_blacklist_data()
+            old_entry = None
+            if old_data:
+                old_entry = next((b for b in old_data if b['id'] == entry_id), None)
+            
             success = delete_blacklist_entry(entry_id)
             if not success:
                 return "删除失败", 500
+            
+            # 记录删除黑名单日志
+            if old_entry:
+                log_operation(
+                    operation_type='delete_blacklist',
+                    target_table='blacklist',
+                    target_id=entry_id,
+                    target_name=old_entry.get('name'),
+                    action_details=f'从黑名单移除：{old_entry.get("name")}（原原因：{old_entry.get("reason")}）',
+                    old_value={'name': old_entry.get('name'), 'reason': old_entry.get('reason'), 'group_id': old_entry.get('group_id')}
+                )
+            
             return redirect(url_for('admin_blacklist'))
         # 默认也执行删除
+        # 先获取旧数据用于日志
+        old_data = load_blacklist_data()
+        old_entry = None
+        if old_data:
+            old_entry = next((b for b in old_data if b['id'] == entry_id), None)
+        
         success = delete_blacklist_entry(entry_id)
         if not success:
             return "删除失败", 500
+        
+        # 记录删除黑名单日志
+        if old_entry:
+            log_operation(
+                operation_type='delete_blacklist',
+                target_table='blacklist',
+                target_id=entry_id,
+                target_name=old_entry.get('name'),
+                action_details=f'从黑名单移除：{old_entry.get("name")}（原原因：{old_entry.get("reason")}）',
+                old_value={'name': old_entry.get('name'), 'reason': old_entry.get('reason'), 'group_id': old_entry.get('group_id')}
+            )
+        
         return redirect(url_for('admin_blacklist'))
+    
+    @app.route('/admin/api/operation-logs')
+    @login_required
+    def api_operation_logs():
+        """获取操作日志 API（支持筛选和导出）"""
+        try:
+            # 获取查询参数
+            operator = request.args.get('operator', '')
+            operation_type = request.args.get('operation_type', '')
+            search = request.args.get('search', '')
+            export_csv = request.args.get('export', '') == 'csv'
+            
+            if not SUPABASE_URL or not SUPABASE_KEY:
+                return jsonify({'error': 'Supabase 配置缺失'}), 500
+            
+            # 构建查询 URL
+            base_url = f"{SUPABASE_URL}/rest/v1/operation_logs"
+            params = ["order=created_at.desc", "limit=100"]  # 限制 100 条
+            
+            if operator:
+                params.append(f"operator_username=eq.{operator}")
+            if operation_type:
+                params.append(f"operation_type=eq.{operation_type}")
+            
+            url = f"{base_url}?{'&'.join(params)}"
+            headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': f"Bearer {SUPABASE_KEY}",
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.get(url, headers=headers)
+            
+            if not response.ok:
+                # 如果表不存在，返回空列表
+                if response.status_code == 404:
+                    logs = []
+                else:
+                    return jsonify({'error': f'获取日志失败：{response.text}'}), 500
+            else:
+                logs = response.json()
+            
+            # 前端搜索（target_name 和 action_details）
+            if search:
+                search_lower = search.lower()
+                logs = [log for log in logs 
+                       if (log.get('target_name', '') and search_lower in log.get('target_name', '').lower()) or
+                          (log.get('action_details', '') and search_lower in log.get('action_details', '').lower())]
+            
+            # 导出 CSV
+            if export_csv:
+                from flask import make_response
+                import csv
+                import io
+                
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow(['时间', '操作人', '操作类型', '目标表', '目标名称', '操作描述', 'IP 地址'])
+                
+                for log in logs:
+                    writer.writerow([
+                        log.get('created_at', ''),
+                        log.get('operator_username', ''),
+                        log.get('operation_type', ''),
+                        log.get('target_table', ''),
+                        log.get('target_name', ''),
+                        log.get('action_details', ''),
+                        log.get('ip_address', '')
+                    ])
+                
+                response = make_response(output.getvalue())
+                response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+                response.headers['Content-Disposition'] = 'attachment; filename=operation_logs.csv'
+                return response
+            
+            # 格式化时间
+            formatted_logs = []
+            for log in logs:
+                formatted_log = log.copy()
+                if log.get('created_at'):
+                    try:
+                        dt = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00'))
+                        china_tz = pytz.timezone('Asia/Shanghai')
+                        china_time = dt.astimezone(china_tz)
+                        formatted_log['created_at'] = china_time.strftime('%Y-%m-%d %H:%M:%S')
+                    except:
+                        pass
+                formatted_logs.append(formatted_log)
+            
+            return jsonify({'logs': formatted_logs})
+            
+        except Exception as e:
+            print(f"获取操作日志时出错：{e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
 
     return app
